@@ -101,7 +101,8 @@ def rz_product_fidelity(
     """
     # Find all RZ gates in the circuit
     rz_gates = []
-    for idx, (op, qargs, cargs) in enumerate(original_qc.data):
+    for idx, item in enumerate(original_qc.data):
+        op, qargs = item.operation, item.qubits
         if isinstance(op, RZGate):
             theta = op.params[0]
             qubit = qargs[0]
@@ -264,7 +265,8 @@ def rz_product_fidelity_sk(
     """
     # Collect all concrete RZ gates
     rz_thetas: List[float] = []
-    for op, qargs, _ in intermediate_rz_qc.data:
+    for item in intermediate_rz_qc.data:
+        op = item.operation
         if isinstance(op, RZGate):
             theta = op.params[0]
             try:

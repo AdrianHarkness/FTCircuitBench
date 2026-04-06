@@ -71,7 +71,8 @@ def transpile_to_clifford_t_cpp(
             "cp",
         ]
         cleaned = QuantumCircuit(*qc.qregs, *qc.cregs)
-        for inst, qargs, cargs in qc.data:
+        for item in qc.data:
+            inst, qargs, cargs = item.operation, item.qubits, item.clbits
             if inst.name in {"id", "I", "delay", "barrier"}:
                 continue
             cleaned.append(inst, qargs, cargs)
