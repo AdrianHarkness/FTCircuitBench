@@ -39,8 +39,9 @@ def rebuild_circuit_with_single_qreg(circuit):
             current_index += 1
 
     # Append all gates and measurements to the new circuit with remapped qubits
-    for instruction, qargs, cargs in circuit.data:
-        new_qargs = [qubit_mapping[qarg] for qarg in qargs]  # Remap the qubits
+    for item in circuit.data:
+        instruction, qargs, cargs = item.operation, item.qubits, item.clbits
+        new_qargs = [qubit_mapping[qarg] for qarg in qargs]
         new_circuit.append(instruction, new_qargs, cargs)
 
     return new_circuit
@@ -88,6 +89,8 @@ def load_qasm_circuit(qasm_input: str, is_file: bool = True) -> QuantumCircuit:
         FileNotFoundError: If qasm_input is a file path and the file does not exist.
         Exception: For other Qiskit-related parsing errors or general issues.
     """
+    qasm_version = "2.0"
+    filtered_qasm = ""
     try:
         # Read QASM content
         if is_file:
@@ -130,10 +133,7 @@ def load_qasm_circuit(qasm_input: str, is_file: bool = True) -> QuantumCircuit:
 
         # Load circuit based on detected version
         if qasm_version == "3.0":
-            if is_file:
-                circuit = qiskit.qasm3.load(qasm_input)
-            else:
-                circuit = qiskit.qasm3.loads(filtered_qasm)
+            circuit = qiskit.qasm3.loads(filtered_qasm)
         else:
             circuit = QuantumCircuit.from_qasm_str(filtered_qasm)
 

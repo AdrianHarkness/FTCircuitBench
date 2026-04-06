@@ -68,9 +68,9 @@ def transpile_to_solovay_kitaev_clifford_t(
 
     # Count gates that need SK synthesis
     gates_to_synthesize = [
-        (i, inst, qargs)
-        for i, (inst, qargs, _) in enumerate(rz_circuit.data)
-        if inst.name in ["rz", "u1", "u2", "u3", "u"]
+        (i, item.operation, item.qubits)
+        for i, item in enumerate(rz_circuit.data)
+        if item.operation.name in ["rz", "u1", "u2", "u3", "u"]
     ]
 
     if gates_to_synthesize:
@@ -93,6 +93,7 @@ def transpile_to_solovay_kitaev_clifford_t(
         # )  # Disable optimization for baseline
     else:
         print("      No gates requiring Solovay-Kitaev synthesis found")
+        discretized_circuit = rz_circuit
         # discretized_circuit = transpile(
         #     rz_circuit, basis_gates=SOLOVAY_KITAEV_BASIS, optimization_level=0
         # )  # Disable optimization for baseline
