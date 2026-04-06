@@ -50,7 +50,14 @@ coverage.xml
 
 .DS_Store
 Thumbs.db
+
+# Generated outputs
 circuit_benchmarks/
+/clifford_t_output/
+/pbc_output/
+
+# Personal/auxiliary scripts not part of the public package
+misc/
 
 # Large QASM files that exceed GitHub's 100MB limit
 qasm/qsvt/qsvt_bandedcirculant_20q.qasm
@@ -58,7 +65,5 @@ qasm/qsvt/qsvt_bandedcirculant_24q.qasm
 qasm/qsvt/qsvt_bandedcirculant_28q.qasm
 qasm/qsvt/qsvt_bandedcirculant_32q.qasm
 
-/clifford_t_output/
-/pbc_output/
 circuit_benchmarks/**/*.txt
 circuit_benchmarks/**/*.qasm

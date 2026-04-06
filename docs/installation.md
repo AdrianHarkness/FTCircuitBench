@@ -1,14 +1,14 @@
 # Installation
 
-Tested on Python 3.8+. Use a fresh `.venv` so Qiskit and nwqec stay isolated.
+Tested on Python 3.9+. Use a fresh `.venv` so Qiskit and nwqec stay isolated.
 
 ## Prerequisites
 
-- Python 3.8+.
+- Python 3.9+.
 - Virtual environment tool (`python -m venv` recommended). If a Conda env is active, deactivate it first.
 - Gridsynth binary on your `PATH` (install via `cabal install gridsynth` and add the cabal bin dir). The package prefers the binary over the Python wrapper.
 
-`requirements.txt` already includes runtime and dev/test deps (Qiskit, nwqec, pytest, ruff, etc.).
+All runtime dependencies are declared in `pyproject.toml` and installed automatically by `pip install -e .`.
 
 ## Steps
 
@@ -19,8 +19,13 @@ cd FTCircuitBench
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-pip install -r requirements.txt
 pip install -e .
+```
+
+To also install development tools (pytest, ruff, black, isort):
+
+```bash
+pip install -e ".[dev]"
 ```
 
 Quick checks:
