@@ -1,142 +1,59 @@
-#!/usr/bin/env python3
-"""
-Test script to verify corrected transpiler behavior:
-- C++ transpiler only used for Gridsynth, not Solovay-Kitaev
-- PBC conversion works for both pipelines
-"""
+from __future__ import annotations
 
-import os
-import sys
-import time
+from qiskit import QuantumCircuit
 
-# Add the project root to the path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from ftcircuitbench import load_qasm_circuit
-from ftcircuitbench.transpilers import (
-    transpile_to_gridsynth_clifford_t,
-    transpile_to_solovay_kitaev_clifford_t,
-)
+import ftcircuitbench.transpilers as transpilers_mod
 
 
-def test_corrected_transpiler_behavior():
-    """Test that C++ transpiler is only used for Gridsynth, not Solovay-Kitaev."""
-    print("=" * 80)
-    print("CORRECTED TRANSPILER BEHAVIOR TEST")
-    print("=" * 80)
+def test_gridsynth_wrapper_prefers_cpp_when_available(monkeypatch) -> None:
+    calls = {"cpp": None}
 
-    # Test files
-    test_cases = [
-        ("qasm/sanity_check.qasm", "Sanity Check"),
-        ("qasm/example_circuit_for_analysis_3q.qasm", "Example Analysis 3q"),
-        ("qasm/adder/adder_4q.qasm", "Adder 4q"),
-    ]
+    def _fake_cpp(**kwargs):
+        calls["cpp"] = kwargs
+        return QuantumCircuit(1)
 
-    for file_path, description in test_cases:
-        if not os.path.exists(file_path):
-            print(f"⚠️  File not found: {file_path}")
-            continue
+    monkeypatch.setattr(transpilers_mod, "_is_nwqec_available", lambda: True)
+    monkeypatch.setattr(transpilers_mod, "_nwqec_ct_transpiler", _fake_cpp)
 
-        print(f"\n{'='*60}")
-        print(f"Testing: {description}")
-        print(f"File: {file_path}")
-        print(f"{'='*60}")
+    qc = QuantumCircuit(1)
+    out = transpilers_mod.transpile_to_gridsynth_clifford_t(
+        qc,
+        gridsynth_precision=4,
+        force_python=False,
+        prefer_cpp=True,
+    )
+    assert isinstance(out, QuantumCircuit)
+    assert calls["cpp"]["epsilon"] == 1e-4
 
-        try:
-            # Load circuit
-            circuit = load_qasm_circuit(file_path, is_file=True)
-            print(
-                f"  - Circuit: {circuit.num_qubits} qubits, {len(circuit.data)} gates"
-            )
 
-            # Test Gridsynth transpilation (should use C++)
-            print("\n  🔄 Gridsynth Transpilation (should use C++):")
-            start_time = time.time()
-            gs_result = transpile_to_gridsynth_clifford_t(
-                circuit.copy(),
-                gridsynth_precision=3,
-            )
-            gs_time = time.time() - start_time
-            gs_gates = len(gs_result.data)
-            print(f"    ✅ Gridsynth: {gs_gates} gates in {gs_time:.3f}s")
+def test_gridsynth_wrapper_honors_force_python(monkeypatch) -> None:
+    calls = {"python": None}
 
-            # Test Solovay-Kitaev transpilation (should use Python)
-            print("\n  🔄 Solovay-Kitaev Transpilation (should use Python):")
-            start_time = time.time()
-            sk_result = transpile_to_solovay_kitaev_clifford_t(
-                circuit.copy(), recursion_degree=2
-            )
-            sk_time = time.time() - start_time
-            sk_gates = len(sk_result.data)
-            print(f"    ✅ Solovay-Kitaev: {sk_gates} gates in {sk_time:.3f}s")
+    def _fake_python(**kwargs):
+        calls["python"] = kwargs
+        return QuantumCircuit(1)
 
-            # Test PBC conversion for Gridsynth result
-            print("\n  🔄 PBC Conversion (Gridsynth pipeline):")
-            try:
-                from ftcircuitbench.pbc_converter import convert_to_pbc_circuit
+    monkeypatch.setattr(transpilers_mod, "_is_nwqec_available", lambda: True)
+    monkeypatch.setattr(transpilers_mod, "_python_gs_transpiler", _fake_python)
 
-                start_time = time.time()
-                pbc_gs_circuit, pbc_gs_stats = convert_to_pbc_circuit(
-                    gs_result,
-                    optimize_t_maxiter=2,
-                    if_print_rpc=False,
-                    layering_method="v2",
-                    parallel=False,
-                )
-                pbc_gs_time = time.time() - start_time
-                pbc_gs_gates = len(pbc_gs_circuit.data)
+    qc = QuantumCircuit(1)
+    out = transpilers_mod.transpile_to_gridsynth_clifford_t(
+        qc,
+        force_python=True,
+        gridsynth_precision=2,
+    )
+    assert isinstance(out, QuantumCircuit)
+    assert calls["python"]["gridsynth_precision"] == 2
 
-                print(f"    ✅ PBC (GS): {pbc_gs_gates} gates in {pbc_gs_time:.3f}s")
 
-                # Show PBC statistics
-                if pbc_gs_stats:
-                    t_operators = pbc_gs_stats.get("pbc_t_operators", 0)
-                    meas_operators = pbc_gs_stats.get("pbc_measurement_operators", 0)
-                    print(
-                        f"    📊 PBC Stats: {t_operators} T-operators, {meas_operators} measurements"
-                    )
+def test_sk_wrapper_always_routes_to_python(monkeypatch) -> None:
+    called = {"count": 0}
 
-            except Exception as e:
-                print(f"    ❌ PBC (GS) failed: {e}")
+    def _fake_sk(**kwargs):
+        called["count"] += 1
+        return QuantumCircuit(1)
 
-            # Test PBC conversion for Solovay-Kitaev result
-            print("\n  🔄 PBC Conversion (Solovay-Kitaev pipeline):")
-            try:
-                start_time = time.time()
-                pbc_sk_circuit, pbc_sk_stats = convert_to_pbc_circuit(
-                    sk_result,
-                    optimize_t_maxiter=2,
-                    if_print_rpc=False,
-                    layering_method="v2",
-                    parallel=False,
-                )
-                pbc_sk_time = time.time() - start_time
-                pbc_sk_gates = len(pbc_sk_circuit.data)
-
-                print(f"    ✅ PBC (SK): {pbc_sk_gates} gates in {pbc_sk_time:.3f}s")
-
-                # Show PBC statistics
-                if pbc_sk_stats:
-                    t_operators = pbc_sk_stats.get("pbc_t_operators", 0)
-                    meas_operators = pbc_sk_stats.get("pbc_measurement_operators", 0)
-                    print(
-                        f"    📊 PBC Stats: {t_operators} T-operators, {meas_operators} measurements"
-                    )
-
-            except Exception as e:
-                print(f"    ❌ PBC (SK) failed: {e}")
-
-            print(f"\n  ✅ All tests passed for {description}")
-
-        except Exception as e:
-            print(f"  ❌ Failed: {e}")
-
-    print(f"\n{'='*80}")
-    print("CORRECTION VERIFICATION")
-    print(f"{'='*80}")
-
-    print("✅ C++ transpiler is correctly used only for Gridsynth transpilation")
-    print("✅ Python transpiler is correctly used for Solovay-Kitaev transpilation")
-    print("✅ PBC conversion works correctly for both pipelines")
-    print("✅ Both pipelines produce valid Clifford+T circuits")
-    print("✅ Integration maintains full compatibility with FTCircuitBench")
+    monkeypatch.setattr(transpilers_mod, "_python_sk_transpiler", _fake_sk)
+    out = transpilers_mod.transpile_to_solovay_kitaev_clifford_t(QuantumCircuit(1))
+    assert isinstance(out, QuantumCircuit)
+    assert called["count"] == 1
