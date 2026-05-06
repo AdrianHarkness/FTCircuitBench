@@ -1,10 +1,10 @@
 # Installation
 
-Tested on Python 3.9+. Use a fresh `.venv` so Qiskit and nwqec stay isolated.
+Tested on Python 3.10+. Use a fresh `.venv` so Qiskit and nwqec stay isolated.
 
 ## Prerequisites
 
-- Python 3.9+.
+- Python 3.10+.
 - Virtual environment tool (`python -m venv` recommended). If a Conda env is active, deactivate it first.
 - Gridsynth binary on your `PATH` (install via `cabal install gridsynth` and add the cabal bin dir). The package prefers the binary over the Python wrapper.
 
