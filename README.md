@@ -90,7 +90,7 @@ A successful run takes a few seconds on a recent laptop and the JSON should begi
 }
 ```
 
-For comparison, the committed reference Clifford+T QASM lives at `circuit_outputs/qft_4q_gs_clifford_t.qasm`. Exact gate counts depend on the `nwqec` / `gridsynth` backend in use, but `total_t_family_count` should be in the same ballpark.
+The values above are the canonical reference for this smoke test on the current `nwqec` C++ backend. If your numbers match (or are within rounding for `_count` totals), your install is reproducing the pipeline correctly. The legacy QASM artifacts under `circuit_outputs/` were produced by an older Python-Gridsynth path and predate the C++ backend; they are kept for archival reference but should not be used as a head-to-head comparison.
 
 ### Full benchmark reproduction
 
@@ -135,6 +135,7 @@ FTCircuitBench/
 ├── generate_benchmarks.py              # CLI: run the full benchmark suite
 ├── FTCircuitBench_Pipeline_Demo.ipynb  # Walkthrough notebook
 ├── qasm/                               # Input benchmark circuits (QASM 2.0)
+├── circuit_outputs/                    # Archival Clifford+T QASM artifacts (legacy backend)
 ├── circuit_stats_output/               # Sample output statistics (JSON)
 ├── figs/                               # Reference output figures (PDF)
 ├── tests/                              # pytest test suite
