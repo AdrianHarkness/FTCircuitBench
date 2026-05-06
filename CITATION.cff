@@ -1,0 +1,73 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying paper."
+title: "FTCircuitBench: A Benchmark Suite for Fault-Tolerant Quantum Compilation and Architecture"
+authors:
+  - family-names: Harkness
+    given-names: Adrian
+  - family-names: Kan
+    given-names: Shuwen
+  - family-names: Liu
+    given-names: Chenxu
+  - family-names: Wang
+    given-names: Meng
+  - family-names: Martyn
+    given-names: John M.
+  - family-names: Xu
+    given-names: Shifan
+  - family-names: Chamaki
+    given-names: Diana
+  - family-names: Decker
+    given-names: Ethan
+  - family-names: Mao
+    given-names: Ying
+  - family-names: Zuluaga
+    given-names: Luis F.
+  - family-names: Terlaky
+    given-names: Tamás
+  - family-names: Li
+    given-names: Ang
+  - family-names: Stein
+    given-names: Samuel
+url: "https://github.com/AdrianHarkness/FTCircuitBench"
+repository-code: "https://github.com/AdrianHarkness/FTCircuitBench"
+license: MIT
+keywords:
+  - quantum-computing
+  - quantum-circuit
+  - benchmarking
+  - fault-tolerant
+  - clifford-t
+preferred-citation:
+  type: article
+  title: "FTCircuitBench: A Benchmark Suite for Fault-Tolerant Quantum Compilation and Architecture"
+  authors:
+    - family-names: Harkness
+      given-names: Adrian
+    - family-names: Kan
+      given-names: Shuwen
+    - family-names: Liu
+      given-names: Chenxu
+    - family-names: Wang
+      given-names: Meng
+    - family-names: Martyn
+      given-names: John M.
+    - family-names: Xu
+      given-names: Shifan
+    - family-names: Chamaki
+      given-names: Diana
+    - family-names: Decker
+      given-names: Ethan
+    - family-names: Mao
+      given-names: Ying
+    - family-names: Zuluaga
+      given-names: Luis F.
+    - family-names: Terlaky
+      given-names: Tamás
+    - family-names: Li
+      given-names: Ang
+    - family-names: Stein
+      given-names: Samuel
+  year: 2026
+  journal: "arXiv preprint"
+  url: "https://arxiv.org/abs/2601.03185"
+  notes: "arXiv:2601.03185 [quant-ph]"
