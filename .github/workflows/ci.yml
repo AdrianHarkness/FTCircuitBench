@@ -14,17 +14,18 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
       - name: Sync deps
-        run: uv sync --all-extras --python ${{ matrix.python-version }}
+        run: uv sync --all-extras
       - name: Run tests
-        run: uv run pytest -v
+        run: uv run --no-sync pytest -v
 
   lint:
     name: Lint (ruff/black/isort)
