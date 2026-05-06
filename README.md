@@ -1,5 +1,6 @@
 # FTCircuitBench
 
+[![CI](https://github.com/AdrianHarkness/FTCircuitBench/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrianHarkness/FTCircuitBench/actions/workflows/ci.yml)
 [![arXiv](https://img.shields.io/badge/arXiv-2601.03185-b31b1b.svg)](https://arxiv.org/abs/2601.03185)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -34,7 +35,7 @@ Requirements: Python 3.10+, [`nwqec`](https://github.com/pnnl/nwqec) (for fast G
 Analyze one circuit (Gridsynth pipeline, PBC on):
 
 ```bash
-python analyze_circuit.py qasm/qft/qft_18q.qasm \
+uv run python analyze_circuit.py qasm/qft/qft_18q.qasm \
   --pipeline gs \
   --gridsynth-precision 5
 ```
@@ -42,7 +43,7 @@ python analyze_circuit.py qasm/qft/qft_18q.qasm \
 Run the full benchmark suite:
 
 ```bash
-python generate_benchmarks.py
+uv run python generate_benchmarks.py
 ```
 
 Open the walkthrough notebook:
@@ -54,6 +55,54 @@ jupyter notebook FTCircuitBench_Pipeline_Demo.ipynb
 Select the project `.venv` kernel and run all cells.
 
 **Common CLI flags:** `--pipeline {gs,sk,both}`, `--gridsynth-precision N`, `--sk-recursion N`, `--layering-max-checks K`, `--optimize-pbc`, `--optimize-t-maxiter N`, `--skip-fidelity`, `--max-workers N`.
+
+## Reproducing paper results
+
+FTCircuitBench accompanies the paper at [arXiv:2601.03185](https://arxiv.org/abs/2601.03185). The benchmark inputs in `qasm/` and reference outputs in `circuit_outputs/` were used to produce the figures and tables in the paper.
+
+### Smoke-test reproduction (one circuit)
+
+To verify your install reproduces a known result, run the Gridsynth + Clifford+T pipeline on the smallest QFT circuit:
+
+```bash
+# Run the Gridsynth + Clifford+T pipeline on a 4-qubit QFT
+uv run python analyze_circuit.py qasm/qft/qft_4q.qasm \
+  --pipeline gs \
+  --gridsynth-precision 5 \
+  --skip-fidelity
+```
+
+This writes three artifacts to the working tree (paths derived from the input filename and pipeline parameters):
+
+- `circuit_stats_output/qft_4q_gs_prec5_stats.json` — aggregated Clifford+T and PBC statistics
+- `clifford_t_output/qft_4q_gs_prec5_clifford_t.qasm` — the transpiled Clifford+T circuit
+- `pbc_output/qft_4q_gs_prec5_*.txt` — PBC measurement bases and T-layers
+
+A successful run takes a few seconds on a recent laptop and the JSON should begin with:
+
+```json
+{
+  "t_count": 456,
+  "tdg_count": 3,
+  "total_t_family_count": 459,
+  "compilation_precision_digits": 5,
+  ...
+}
+```
+
+For comparison, the committed reference Clifford+T QASM lives at `circuit_outputs/qft_4q_gs_clifford_t.qasm`. Exact gate counts depend on the `nwqec` / `gridsynth` backend in use, but `total_t_family_count` should be in the same ballpark.
+
+### Full benchmark reproduction
+
+To reproduce the full set of benchmarks behind `circuit_benchmarks/` and the figures in the paper:
+
+```bash
+uv run python generate_benchmarks.py
+```
+
+This iterates over all circuits in `qasm/` and produces aggregated statistics. **Approximate runtime: several hours on a workstation; longer on a laptop.** The output reproduces the structure under `circuit_benchmarks/`.
+
+See [`docs/examples.md`](docs/examples.md) for additional usage patterns, including how to run a subset of circuits or sweep over compilation parameters.
 
 ## Python API
 
@@ -95,6 +144,7 @@ FTCircuitBench/
 
 ## Documentation
 
+- [`docs/index.md`](docs/index.md) — documentation entry point
 - [`docs/installation.md`](docs/installation.md) — detailed setup instructions
 - [`docs/api.md`](docs/api.md) — public Python API reference
 - [`docs/examples.md`](docs/examples.md) — CLI and programmatic recipes
@@ -118,3 +168,19 @@ If you use FTCircuitBench in your research, please cite:
       url={https://arxiv.org/abs/2601.03185},
 }
 ```
+
+See also `CITATION.cff` for machine-readable metadata.
+
+## Troubleshooting
+
+**`gridsynth` binary not found**
+
+The `gridsynth` Haskell binary enables the Python-fallback Gridsynth path; the C++ `nwqec` backend is preferred and used automatically when available. If you need the Haskell `gridsynth`, install it via `cabal install gridsynth` and ensure the cabal bin directory is on your `PATH`.
+
+**`nwqec` install fails**
+
+`nwqec` is a binary wheel for the C++ Clifford+T / PBC transpilers. If your platform doesn't have a prebuilt wheel, see [`docs/installation.md`](docs/installation.md) for build-from-source instructions. The pure-Python fallbacks (`gs_transpiler`, `sk_transpiler`) work without `nwqec`.
+
+**Long benchmark runs**
+
+`generate_benchmarks.py` exercises every circuit in `qasm/` and can take hours. To run a subset, see the CLI flags in [`docs/examples.md`](docs/examples.md) or the `analyze_circuit.py` per-circuit invocation.
