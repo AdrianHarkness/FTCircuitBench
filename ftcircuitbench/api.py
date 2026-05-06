@@ -253,7 +253,10 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     fidelity_result: Optional[Dict[str, Any]] = None
     if config.calculate_fidelity:
         # Skip SK fidelity when qubit count exceeds the small-circuit bound; avoid using GS for SK fidelity
-        if config.pipeline == "sk" and working_circuit.num_qubits > MAX_QUBITS_FOR_FIDELITY:
+        if (
+            config.pipeline == "sk"
+            and working_circuit.num_qubits > MAX_QUBITS_FOR_FIDELITY
+        ):
             fidelity_result = {
                 "fidelity": "N/A",
                 "method": "skipped_over_qubit_bound",

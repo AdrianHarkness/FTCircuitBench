@@ -2,6 +2,7 @@
 """
 Transpilation to Solovay-Kitaev basis (cx, h, s, t, tdg).
 """
+
 import warnings
 from typing import Tuple, Union
 
@@ -123,7 +124,9 @@ def transpile_qasm_file_to_sk(
     (Based on the original transpile_sk.py main block)
     """
     circuit = QuantumCircuit.from_qasm_file(input_qasm_path)
-    discretized_circuit = transpile_to_solovay_kitaev_clifford_t(circuit, recursion_degree)
+    discretized_circuit = transpile_to_solovay_kitaev_clifford_t(
+        circuit, recursion_degree
+    )
     with open(output_qasm_path, "w") as out_file:
         dump(discretized_circuit, out_file)
     return discretized_circuit

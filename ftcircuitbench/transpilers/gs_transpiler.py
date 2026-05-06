@@ -2,17 +2,18 @@
 """
 Gridsynth-based transpilation to Clifford+T basis.
 """
+
 from typing import Tuple, Union
 
 from qiskit import QuantumCircuit, transpile
 from tqdm import tqdm
 
-from ftcircuitbench.decomposer import (
+from ftcircuitbench.decomposer import (  # Gridsynth decomposer
     decompose_rz_gates_gridsynth,
-)  # Gridsynth decomposer
-from ftcircuitbench.parser import (
+)
+from ftcircuitbench.parser import (  # To load QASM if input is a path/string
     load_qasm_circuit,
-)  # To load QASM if input is a path/string
+)
 
 # Define the intermediate basis for Gridsynth approach
 GRIDSYNTH_INTERMEDIATE_BASIS = ["rz", "s", "h", "cx"]

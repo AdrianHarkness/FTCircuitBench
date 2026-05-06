@@ -5,7 +5,12 @@ from pathlib import Path
 from qiskit import QuantumCircuit
 
 import ftcircuitbench.api as api_mod
-from ftcircuitbench.api import PipelineConfig, run_analysis, run_analysis_for_file, run_pipeline
+from ftcircuitbench.api import (
+    PipelineConfig,
+    run_analysis,
+    run_analysis_for_file,
+    run_pipeline,
+)
 
 
 def _fake_transpile_gs(circuit, **kwargs):
@@ -31,7 +36,9 @@ def _fake_transpile_sk(circuit, **kwargs):
 
 
 def _patch_api_dependencies(monkeypatch):
-    monkeypatch.setattr(api_mod, "transpile_to_gridsynth_clifford_t", _fake_transpile_gs)
+    monkeypatch.setattr(
+        api_mod, "transpile_to_gridsynth_clifford_t", _fake_transpile_gs
+    )
     monkeypatch.setattr(
         api_mod, "transpile_to_solovay_kitaev_clifford_t", _fake_transpile_sk
     )

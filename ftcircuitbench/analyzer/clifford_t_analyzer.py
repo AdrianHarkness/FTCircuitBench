@@ -80,7 +80,9 @@ def analyze_clifford_t_circuit(
         weight = data.get("weight", 0)
         interaction_counts[(u, v)] = weight
         total_interactions += weight
-        qubit_degree[u] += weight  # Note: logic in original code added 1 for each interaction?
+        qubit_degree[
+            u
+        ] += weight  # Note: logic in original code added 1 for each interaction?
         # In original code:
         # interaction_counts[pair] += 1
         # qubit_degree[q1] += 1
@@ -102,7 +104,7 @@ def analyze_clifford_t_circuit(
 
     # Let's recalculate qubit_degree from the graph weights to be safe and consistent.
     qubit_degree = dict(interaction_graph.degree(weight="weight"))
-    
+
     # Fill in zeros for isolated qubits
     for i in range(num_qubits):
         if i not in qubit_degree:
@@ -125,7 +127,7 @@ def analyze_clifford_t_circuit(
             if max_possible_edges > 0
             else "Not computable: only one qubit"
         )
-        
+
         qubit_degrees = list(qubit_degree.values())
         stats["avg_qubit_interaction_degree"] = np.mean(qubit_degrees)
         stats["std_qubit_interaction_degree"] = np.std(qubit_degrees)

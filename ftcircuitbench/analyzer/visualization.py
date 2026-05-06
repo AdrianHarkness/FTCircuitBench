@@ -661,9 +661,7 @@ def show_operator_weight_histogram(
     counts = [weight_counts[weight] for weight in weights]
 
     # Create bar plot (clearer than histogram for discrete integer data)
-    ax.bar(
-        weights, counts, color=color, alpha=alpha, edgecolor=edgecolor, linewidth=1
-    )
+    ax.bar(weights, counts, color=color, alpha=alpha, edgecolor=edgecolor, linewidth=1)
 
     # Customize the plot
     ax.set_xlabel("Operator Weight", fontsize=font_size)
@@ -999,7 +997,9 @@ def plot_pbc_pauli_weight_binned_bands(
         weights.append(len(instruction.qubits))
 
     if not weights:
-        print("⚠️  No PBC rotation or measurement operators found to plot weight bands.")
+        print(
+            "⚠️  No PBC rotation or measurement operators found to plot weight bands."
+        )
         return
 
     n = len(weights)

@@ -26,7 +26,9 @@ def test_calculate_circuit_fidelity_small_circuits_are_numeric(n_qubits: int) ->
 
 def test_rz_product_fidelity_reports_failed_decomposition(monkeypatch) -> None:
     # Force a low-fidelity decomposition by returning an empty/identity-like sequence
-    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "H")
+    monkeypatch.setattr(
+        fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "H"
+    )
     qc = QuantumCircuit(1)
     qc.rz(0.6, 0)
 

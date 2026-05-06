@@ -11,11 +11,15 @@ from typing import Tuple, Union
 from qiskit import QuantumCircuit
 
 from ftcircuitbench.parser import load_qasm_circuit
-from ftcircuitbench.transpilers.gs_transpiler import is_clifford_t_basis
+from ftcircuitbench.transpilers.gs_transpiler import (
+    is_clifford_t_basis,
+)
 from ftcircuitbench.transpilers.gs_transpiler import (
     transpile_to_gridsynth_clifford_t as python_gs_transpiler,
 )
-from ftcircuitbench.transpilers.nwqec_ct import is_nwqec_available
+from ftcircuitbench.transpilers.nwqec_ct import (
+    is_nwqec_available,
+)
 from ftcircuitbench.transpilers.nwqec_ct import (
     transpile_to_clifford_t_cpp as nwqec_transpile_to_clifford_t,
 )

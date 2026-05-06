@@ -4,11 +4,10 @@ import subprocess
 from typing import Optional, Union
 
 import numpy as np
-from qiskit.circuit import Parameter, ParameterExpression, QuantumCircuit
+from qiskit.circuit import ParameterExpression, QuantumCircuit
 from qiskit.circuit.library import RZGate
 
 # For __main__ fidelity check:
-from qiskit.quantum_info import Operator, process_fidelity
 
 # --- Gridsynth CLI Based Decomposition ---
 

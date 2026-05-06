@@ -3,6 +3,7 @@
 Pauli Based Computation (PBC) converter for FTCircuitBench.
 Implements logic to convert Clifford+T circuits to PBC.
 """
+
 from .pbc_circuit_reader import (
     analyze_pbc_file_content,
     parse_pauli_string,

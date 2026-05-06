@@ -567,9 +567,7 @@ def get_interaction_graph_rows(stats, prefix=""):
             rows.append(["Modularity", modularity])
     numc_key = f"{prefix}interaction_graph_num_communities"
     if numc_key in stats:
-        rows.append(
-            ["Number of communities", stats[numc_key]]
-        )
+        rows.append(["Number of communities", stats[numc_key]])
     avgcs_key = f"{prefix}interaction_graph_avg_community_size"
     if avgcs_key in stats:
         avg_size = stats[avgcs_key]
@@ -586,14 +584,10 @@ def get_interaction_graph_rows(stats, prefix=""):
             rows.append(["Std community size", std_size])
     mincs_key = f"{prefix}interaction_graph_min_community_size"
     if mincs_key in stats:
-        rows.append(
-            ["Min community size", stats[mincs_key]]
-        )
+        rows.append(["Min community size", stats[mincs_key]])
     maxcs_key = f"{prefix}interaction_graph_max_community_size"
     if maxcs_key in stats:
-        rows.append(
-            ["Max community size", stats[maxcs_key]]
-        )
+        rows.append(["Max community size", stats[maxcs_key]])
 
     return rows
 
@@ -628,4 +622,3 @@ def get_stats_json_path(output_dir: str, circuit_name: str, param_str: str) -> s
     Returns the path for the stats JSON file.
     """
     return os.path.join(output_dir, f"{circuit_name}_{param_str}_stats.json")
-

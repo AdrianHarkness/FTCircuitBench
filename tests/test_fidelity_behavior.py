@@ -31,7 +31,9 @@ def test_calculate_fidelity_unitary_path_error_status() -> None:
     assert result["fidelity"] is None
 
 
-def test_calculate_fidelity_large_without_intermediate_returns_na(large_rz_circuit) -> None:
+def test_calculate_fidelity_large_without_intermediate_returns_na(
+    large_rz_circuit,
+) -> None:
     result = calculate_circuit_fidelity(
         large_rz_circuit,
         large_rz_circuit.copy(),
@@ -44,7 +46,9 @@ def test_calculate_fidelity_large_without_intermediate_returns_na(large_rz_circu
     assert result["method"] == "rz_product_fidelity_sk"
 
 
-def test_calculate_fidelity_large_uses_sk_product(monkeypatch, large_rz_circuit) -> None:
+def test_calculate_fidelity_large_uses_sk_product(
+    monkeypatch, large_rz_circuit
+) -> None:
     monkeypatch.setattr(
         fidelity_mod,
         "rz_product_fidelity_sk",
@@ -67,7 +71,9 @@ def test_calculate_fidelity_large_uses_sk_product(monkeypatch, large_rz_circuit)
     assert result["rz_gate_count"] == 1
 
 
-def test_calculate_fidelity_large_uses_gridsynth_product(monkeypatch, large_rz_circuit) -> None:
+def test_calculate_fidelity_large_uses_gridsynth_product(
+    monkeypatch, large_rz_circuit
+) -> None:
     monkeypatch.setattr(
         fidelity_mod,
         "rz_product_fidelity",
@@ -100,7 +106,9 @@ def test_rz_product_fidelity_no_rz_gates_returns_contract() -> None:
 
 
 def test_rz_product_fidelity_skips_parameterized_rz(monkeypatch) -> None:
-    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "T")
+    monkeypatch.setattr(
+        fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "T"
+    )
     qc = QuantumCircuit(1)
     theta = Parameter("theta")
     qc.rz(theta, 0)
@@ -110,7 +118,9 @@ def test_rz_product_fidelity_skips_parameterized_rz(monkeypatch) -> None:
 
 
 def test_rz_product_fidelity_sequential_success(monkeypatch) -> None:
-    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "T")
+    monkeypatch.setattr(
+        fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "T"
+    )
     qc = QuantumCircuit(1)
     qc.rz(0.2, 0)
     result = rz_product_fidelity(qc, gridsynth_precision=3, use_multiprocessing=False)
@@ -133,7 +143,9 @@ def test_rz_product_fidelity_multiprocessing_fallback(monkeypatch) -> None:
         "Pool",
         lambda *args, **kwargs: _BrokenPool(),
     )
-    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "W")
+    monkeypatch.setattr(
+        fidelity_mod, "_run_gridsynth_cli", lambda *_args, **_kwargs: "W"
+    )
 
     qc = QuantumCircuit(2)
     qc.rz(0.2, 0)
