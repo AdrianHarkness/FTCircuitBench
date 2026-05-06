@@ -11,9 +11,20 @@ A benchmark suite for fault-tolerant quantum circuit compilation and architectur
 ```bash
 git clone https://github.com/AdrianHarkness/FTCircuitBench.git
 cd FTCircuitBench
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+uv sync --all-extras       # creates .venv with all deps + dev tools
+uv run pytest              # verify install
+```
+
+This uses [uv](https://docs.astral.sh/uv/) and the committed `uv.lock` for a
+reproducible install. The pinned interpreter is read from `.python-version`
+(currently `3.11`).
+
+### pip alternative
+
+If you prefer pip:
+
+```bash
+pip install -e ".[dev]"
 ```
 
 Requirements: Python 3.10+, [`nwqec`](https://github.com/pnnl/nwqec) (for fast Gridsynth/PBC via `fuse_t`). An optional `gridsynth` binary on your `PATH` enables the Python-fallback GS path.
