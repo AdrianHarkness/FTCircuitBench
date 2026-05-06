@@ -3,6 +3,7 @@ import argparse
 import os
 from typing import Dict, List, Optional
 
+from ftcircuitbench.api import PipelineConfig, run_analysis_for_file
 from ftcircuitbench.benchmark_utils import (
     get_clifford_t_qasm_path,
     get_output_param_str,
@@ -12,7 +13,6 @@ from ftcircuitbench.benchmark_utils import (
     print_pipeline_comparison,
     save_json,
 )
-from ftcircuitbench.api import PipelineConfig, run_analysis_for_file
 
 
 def parse_arguments():
@@ -186,9 +186,7 @@ def run_analysis(
     input_base = os.path.splitext(os.path.basename(qasm_file))[0]
     print("=== FTCircuitBench Analysis ===")
     print(f"Input: {qasm_file}")
-    print(
-        f"PBC Optimization: {'ON' if optimize_pbc else 'OFF'}"
-    )
+    print(f"PBC Optimization: {'ON' if optimize_pbc else 'OFF'}")
 
     jobs = _build_pipeline_jobs(
         input_base=input_base,

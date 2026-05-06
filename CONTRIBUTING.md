@@ -59,6 +59,22 @@ uv run black ftcircuitbench/ tests/
 uv run isort ftcircuitbench/ tests/
 ```
 
+## Pre-commit hooks
+
+This repository ships a [pre-commit](https://pre-commit.com/) configuration
+(`.pre-commit-config.yaml`) that runs ruff, black, isort, and a few standard
+hygiene checks (trailing whitespace, end-of-file newline, YAML/TOML syntax,
+large-file guard) on every commit. Installing the hooks is optional but
+recommended:
+
+```bash
+uv run pre-commit install
+uv run pre-commit run --all-files
+```
+
+The first command installs the git hook in your local clone; the second runs
+all hooks against the entire repository so you can verify a clean baseline.
+
 ## Submitting changes
 
 1. Fork the repository and create a branch from `main`.

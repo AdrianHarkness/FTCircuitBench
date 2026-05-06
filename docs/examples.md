@@ -11,7 +11,7 @@ python analyze_circuit.py qasm/hhl/hhl_7q.qasm \
   --pipeline both \
   --gridsynth-precision 4 \
   --sk-recursion 2 \
-  --optimize-pbc 
+  --optimize-pbc
 ```
 
 Outputs land in:
