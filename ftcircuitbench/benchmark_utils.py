@@ -3,7 +3,7 @@
 import json
 import numbers
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -49,7 +49,7 @@ def fmt_float_cell(value: Any, digits: int = 2):
     """
     if isinstance(value, numbers.Number):
         try:
-            return f"{float(value):.{digits}f}"
+            return f"{float(value):.{digits}f}"  # type: ignore[arg-type]
         except Exception:
             return str(value)
     return "N/A" if value is None else value
@@ -67,7 +67,7 @@ def save_qasm_circuit(circuit: QuantumCircuit, filepath: str):
 
 def find_all_qasm_files(qasm_root="qasm") -> Dict[str, Dict[str, str]]:
     """Recursively finds all .qasm files in a root directory."""
-    qasm_files = {}
+    qasm_files: Dict[str, Dict[str, str]] = {}
     for dirpath, _, filenames in os.walk(qasm_root):
         for filename in filenames:
             if filename.endswith(".qasm"):
@@ -153,7 +153,12 @@ def save_json(data, filepath):
 # --- Reporting and Printing Utilities ---
 
 
-def print_table(title: str, headers: list, rows: list, column_alignments: list = None):
+def print_table(
+    title: str,
+    headers: list,
+    rows: list,
+    column_alignments: Optional[list] = None,
+):
     """Print a formatted table."""
     if not rows:
         print(f"\n=== {title} ===")

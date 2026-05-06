@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import numpy as np
 from qiskit import QuantumCircuit
 from tqdm import tqdm
@@ -285,7 +287,7 @@ class RotationPauliCirc:
                 - tracking_dict: Maps indices from tab1 to matching indices in tab2
         """
         total_ct = 0
-        tracking = {}
+        tracking: Dict[int, Any] = {}
         if tab1.stab_counts == 0 or tab2.stab_counts == 0:
             return total_ct, tracking
 

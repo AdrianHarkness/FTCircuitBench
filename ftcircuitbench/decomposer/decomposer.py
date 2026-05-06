@@ -1,7 +1,7 @@
 # ./ftcircuitbench/decomposer/decomposer.py
 import re
 import subprocess
-from typing import Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from qiskit.circuit import ParameterExpression, QuantumCircuit
@@ -117,8 +117,10 @@ def decompose_rz_gates_gridsynth(
 
     ZERO_THRESHOLD = 10 ** (-precision)
     # Step 1: Collect all operations and RZ gate info
-    ops_info = []  # (is_rz, op, qargs, cargs, rz_info)
-    rz_jobs = []  # (index, qubit, theta_str)
+    ops_info: List[Tuple[bool, Any, Any, Any, Any]] = (
+        []
+    )  # (is_rz, op, qargs, cargs, rz_info)
+    rz_jobs: List[Tuple[int, Any, str]] = []  # (index, qubit, theta_str)
     for idx, (op, qargs, cargs) in enumerate(original_circuit.data):
         if isinstance(op, RZGate):
             theta = op.params[0]
@@ -254,7 +256,7 @@ def parse_angle_from_gate_name(gate_name: str) -> Optional[float]:
     if match:
         angle_str = match.group(1)
         try:
-            allowed_globals = {"__builtins__": {}}
+            allowed_globals: Dict[str, Any] = {"__builtins__": {}}
             allowed_locals = {
                 "pi": np.pi,
                 "Pi": np.pi,

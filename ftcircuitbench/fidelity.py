@@ -4,7 +4,7 @@ Provides scalable fidelity calculation methods for large quantum circuits.
 """
 
 import multiprocessing
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -78,7 +78,7 @@ def rz_product_fidelity(
     original_qc: QuantumCircuit,
     gridsynth_precision: int,
     use_multiprocessing: bool = True,
-) -> Dict[str, Union[float, List[float], int, str]]:
+) -> Dict[str, Any]:
     """
     Calculate fidelity by tracking individual RZ gate decomposition fidelities.
     This method is more scalable for large circuits as it avoids computing full circuit unitaries.
@@ -249,7 +249,7 @@ def rz_product_fidelity_sk(
     intermediate_rz_qc: QuantumCircuit,
     recursion_degree: int,
     use_multiprocessing: bool = True,
-) -> Dict[str, Union[float, List[float], int, str]]:
+) -> Dict[str, Any]:
     """
     Calculate fidelity by approximating each RZ gate using Solovay-Kitaev and multiplying
     individual fidelities, analogous to the Gridsynth-based rz_product_fidelity but without
@@ -338,7 +338,7 @@ def calculate_circuit_fidelity(
     gridsynth_precision: int,
     sk_recursion_degree: Optional[int] = None,
     intermediate_qc: Optional[QuantumCircuit] = None,
-) -> Dict[str, Union[float, str, str]]:
+) -> Dict[str, Any]:
     """
     Calculate fidelity between original and decomposed circuits.
     For large circuits (> MAX_QUBITS_FOR_FIDELITY), uses rz_product_fidelity.

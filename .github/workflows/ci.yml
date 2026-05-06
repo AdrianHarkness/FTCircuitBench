@@ -46,7 +46,6 @@ jobs:
   typecheck:
     name: mypy
     runs-on: ubuntu-latest
-    continue-on-error: true  # informational until Task 7 settles
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3

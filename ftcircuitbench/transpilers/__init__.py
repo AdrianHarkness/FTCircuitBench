@@ -38,13 +38,22 @@ try:
 except ImportError:
     CPP_TRANSPILERS_AVAILABLE = False
 
-    # Create dummy functions for when C++ transpilers are not available
-    def transpile_to_gridsynth_clifford_t_cpp(*args, **kwargs):
+    # Create dummy functions for when C++ transpilers are not available.
+    # Signatures intentionally match the real implementations so mypy treats
+    # the conditional branches as compatible.
+    def transpile_to_gridsynth_clifford_t_cpp(
+        circuit_input: Union[QuantumCircuit, str],
+        is_file: bool = False,
+        gridsynth_precision: int = 3,
+        remove_final_measurements: bool = True,
+        return_intermediate: bool = False,
+        fallback_to_python: bool = True,
+    ) -> Union[QuantumCircuit, Tuple[QuantumCircuit, QuantumCircuit]]:
         raise ImportError(
             "C++ transpilers not available. Please install nwqec with C++ backend."
         )
 
-    def is_cpp_gs_available():
+    def is_cpp_gs_available() -> bool:
         return False
 
 

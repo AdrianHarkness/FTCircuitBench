@@ -79,7 +79,7 @@ class PipelineResult:
     timings: Dict[str, float]
     parameters: Dict[str, Any]
     intermediate_circuit: Optional[QuantumCircuit] = None
-    artifacts: Dict[str, str] = None
+    artifacts: Optional[Dict[str, str]] = None
 
     def to_dict(
         self,
@@ -164,6 +164,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     working_circuit = circuit.copy()
     timings: Dict[str, float] = {}
     artifacts: Dict[str, str] = {}
+    parameters: Dict[str, Any] = {}
 
     # Step 1: Clifford+T synthesis
     ct_start = time.time()
@@ -185,7 +186,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
                 return_intermediate=False,
                 prefer_cpp=config.prefer_cpp,
             )
-        parameters = {"gridsynth_precision": config.gridsynth_precision}
+        parameters["gridsynth_precision"] = config.gridsynth_precision
     else:
         # Solovay-Kitaev pipeline
         if config.return_intermediate:
@@ -202,7 +203,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
                 recursion_degree=config.sk_recursion,
                 return_intermediate=False,
             )
-        parameters = {"sk_recursion_degree": config.sk_recursion}
+        parameters["sk_recursion_degree"] = config.sk_recursion
 
     timings["transpilation_clifford_t_time"] = time.time() - ct_start
 

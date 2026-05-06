@@ -4,6 +4,7 @@ Parser for QASM files and transpilation to a target basis set using Qiskit.
 """
 
 import os
+from typing import Optional
 
 import qiskit.qasm3
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
@@ -169,7 +170,7 @@ def load_qasm_circuit(qasm_input: str, is_file: bool = True) -> QuantumCircuit:
 def transpile_qasm_to_target_basis(
     qasm_input: str,
     is_file: bool = True,
-    basis_gates: list = None,
+    basis_gates: Optional[list] = None,
     optimization_level: int = 0,  # Disable optimization for baseline
 ) -> QuantumCircuit:
     # ... (content remains the same) ...
