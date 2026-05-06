@@ -1,8 +1,8 @@
 # FTCircuitBench
 
 [![arXiv](https://img.shields.io/badge/arXiv-2601.03185-b31b1b.svg)](https://arxiv.org/abs/2601.03185)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 A benchmark suite for fault-tolerant quantum circuit compilation and architecture, covering Clifford+T synthesis (Gridsynth and Solovay-Kitaev) and Pauli-Based Computation (PBC).
 
@@ -16,7 +16,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Requirements: Python 3.9+, [`nwqec`](https://github.com/pnnl/nwqec) (for fast Gridsynth/PBC via `fuse_t`). An optional `gridsynth` binary on your `PATH` enables the Python-fallback GS path.
+Requirements: Python 3.10+, [`nwqec`](https://github.com/pnnl/nwqec) (for fast Gridsynth/PBC via `fuse_t`). An optional `gridsynth` binary on your `PATH` enables the Python-fallback GS path.
 
 ## Quick start
 

@@ -7,8 +7,8 @@ name = "ftcircuitbench"
 version = "0.1.0"
 description = "A benchmark suite for fault-tolerant quantum circuit compilation and analysis"
 readme = "README.md"
-requires-python = ">=3.9"
-license = { text = "Apache-2.0" }
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
 
 authors = [
     { name = "Adrian Harkness" },
@@ -28,12 +28,12 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
@@ -82,11 +82,12 @@ python_functions = ["test_*"]
 
 [tool.ruff]
 line-length = 88
+target-version = "py310"
 extend-exclude = ["misc/*.ipynb"]
 
 [tool.black]
 line-length = 88
-target-version = ["py310"]
+target-version = ["py310", "py311", "py312"]
 
 [tool.isort]
 profile = "black"
