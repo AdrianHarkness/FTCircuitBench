@@ -79,8 +79,11 @@ def _run_gridsynth_cli_unpack(args):
 
 
 def decompose_rz_gates_gridsynth(
-    original_circuit: QuantumCircuit, precision: int = 10, progress_bar=None
-) -> QuantumCircuit:
+    original_circuit: QuantumCircuit,
+    precision: int = 10,
+    progress_bar=None,
+    return_decomp_map: bool = False,
+) -> Union[QuantumCircuit, Tuple[QuantumCircuit, Dict[str, str]]]:
     """
     Decomposes all RZ gates in a quantum circuit into S, H, T (and possibly X) gates
     using the gridsynth CLI.
@@ -92,14 +95,21 @@ def decompose_rz_gates_gridsynth(
       `ParameterExpression` objects (e.g., containing `Parameter('my_angle')`)
       will cause an error.
     - Identity operations (rotations of 0 degrees) are automatically removed.
+    - Gridsynth is invoked at most once per unique angle string; repeats are
+      cached and reused.
 
     Args:
         original_circuit: The Qiskit QuantumCircuit to decompose.
         precision: Number of digits of precision for gridsynth.
         progress_bar: Optional tqdm progress bar to update during decomposition.
+        return_decomp_map: If True, also return a dict mapping each unique
+            theta string to its gridsynth gate-string output. Useful for
+            downstream consumers (e.g. fidelity calculation) that would
+            otherwise re-invoke gridsynth on the same angles.
 
     Returns:
         A new QuantumCircuit with RZ gates replaced by their decompositions.
+        If return_decomp_map=True, returns (new_circuit, decomp_map) instead.
 
     Raises:
         RuntimeError: If gridsynth command fails or is not found.
@@ -121,7 +131,8 @@ def decompose_rz_gates_gridsynth(
         []
     )  # (is_rz, op, qargs, cargs, rz_info)
     rz_jobs: List[Tuple[int, Any, str]] = []  # (index, qubit, theta_str)
-    for idx, (op, qargs, cargs) in enumerate(original_circuit.data):
+    for idx, instr in enumerate(original_circuit.data):
+        op, qargs, cargs = instr.operation, instr.qubits, instr.clbits
         if isinstance(op, RZGate):
             theta = op.params[0]
             qubit = qargs[0]
@@ -154,14 +165,15 @@ def decompose_rz_gates_gridsynth(
         else:
             ops_info.append((False, op, qargs, cargs, None))
 
-    # Step 2: Process RZ gates
-    rz_results = {}
+    # Step 2: Process RZ gates (dedupe identical theta strings)
+    rz_results: Dict[int, Tuple[Any, str]] = {}
+    decomp_map: Dict[str, str] = {}
     if rz_jobs:
         for idx, qubit, theta_str in rz_jobs:
             try:
-                # Get gate sequence from gridsynth
-                decomp_str = _run_gridsynth_cli(theta_str, precision)
-                rz_results[idx] = (qubit, decomp_str)
+                if theta_str not in decomp_map:
+                    decomp_map[theta_str] = _run_gridsynth_cli(theta_str, precision)
+                rz_results[idx] = (qubit, decomp_map[theta_str])
                 if progress_bar:
                     progress_bar.update(1)
             except Exception as e:
@@ -199,6 +211,8 @@ def decompose_rz_gates_gridsynth(
                 progress_bar.update(1)
         elif op is not None:
             new_circuit.append(op, qargs, cargs)
+    if return_decomp_map:
+        return new_circuit, decomp_map
     return new_circuit
 
 

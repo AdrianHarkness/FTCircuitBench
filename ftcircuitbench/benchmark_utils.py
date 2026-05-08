@@ -429,14 +429,18 @@ def print_pipeline_comparison(
     gs_reduction = ((gs_init_t - gs_opt_t) / gs_init_t * 100) if gs_init_t > 0 else 0
     sk_reduction = ((sk_init_t - sk_opt_t) / sk_init_t * 100) if sk_init_t > 0 else 0
 
+    def _fmt_int(stats: dict, key: str) -> str:
+        v = stats.get(key)
+        return f"{v:,}" if isinstance(v, (int, float)) else "N/A"
+
     pbc_rows = [
         ["Input T-gates for PBC", f"{gs_init_t:,}", f"{sk_init_t:,}"],
         ["Final PBC Rotation Ops", f"{gs_opt_t:,}", f"{sk_opt_t:,}"],
         ["T-gate Reduction by PBC", f"{gs_reduction:.2f}%", f"{sk_reduction:.2f}%"],
         [
             "Final PBC Rotation Layers",
-            f"{gs_full_stats.get('pbc_rotation_layers', 'N/A'):,}",
-            f"{sk_full_stats.get('pbc_rotation_layers', 'N/A'):,}",
+            _fmt_int(gs_full_stats, "pbc_rotation_layers"),
+            _fmt_int(sk_full_stats, "pbc_rotation_layers"),
         ],
         [
             "Avg. Pauli Weight (Final)",

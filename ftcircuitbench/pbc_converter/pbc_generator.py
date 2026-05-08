@@ -250,6 +250,8 @@ def convert_to_pbc_circuit(
         fuse_applied = basic_stats.get("pbc_fuse_t_applied", False)
         pbc_stats = {
             **basic_stats,
+            "num_qubits": clifford_t_circuit.num_qubits,
+            "initial_clifford_t_t_gates_for_pbc": initial_clifford_t_t_count,
             "pbc_conversion_time": time.time() - start_time,
             "pbc_optimized": bool(
                 optimize_pbc and optimize_t_maxiter > 0 and fuse_applied

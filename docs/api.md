@@ -34,7 +34,7 @@ class PipelineConfig:
     pipeline: Literal["gs", "sk"] = "gs"
     gridsynth_precision: int = 3
     sk_recursion: int = 1
-    layering_method: Literal["bare", "v2", "v3", "singleton"] = "v2"
+    layering_method: Literal["bare", "v2", "singleton"] = "v2"
     layering_max_checks: Optional[int] = None
     optimize_pbc: bool = False
     optimize_t_maxiter: int = 5
@@ -50,8 +50,13 @@ Configuration for a single pipeline run. Key fields:
 
 - `pipeline` — `"gs"` for Gridsynth or `"sk"` for Solovay-Kitaev.
 - `gridsynth_precision` / `sk_recursion` — pipeline-specific knobs.
-- `layering_method` — PBC layering strategy. When `"v2"` is paired with
-  `layering_max_checks`, the API silently upgrades to `"v3"`.
+- `layering_method` — PBC layering strategy:
+  - `"bare"` — single-pass greedy grouping; fastest per-call but produces more layers.
+  - `"v2"` — backward-scan grouping; default. Accepts `layering_max_checks` to
+    bound the scan window.
+  - `"singleton"` — one rotation per layer (disables grouping).
+- `layering_max_checks` — bound on `v2`'s backward layer scan. `None` (the
+  default) scans all prior layers. Ignored for `"bare"` and `"singleton"`.
 - `optimize_pbc` / `optimize_t_maxiter` — toggle and bound the PBC T-merging
   optimisation.
 - `prefer_cpp` — prefer the nwqec C++ backend when available; otherwise the

@@ -89,7 +89,8 @@ def test_run_pipeline_gs_returns_expected_schema(monkeypatch) -> None:
     assert "clifford_stats" in as_dict
     assert "pbc_stats" in as_dict
     assert as_dict["fidelity"]["status"] == "success"
-    assert result.parameters["layering_method"] == "v3"
+    assert result.parameters["layering_method"] == "v2"
+    assert result.parameters["layering_max_checks"] == 5
 
 
 def test_run_pipeline_saves_artifacts(monkeypatch, tmp_path: Path) -> None:

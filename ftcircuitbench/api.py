@@ -27,7 +27,7 @@ from .transpilers import (
     transpile_to_solovay_kitaev_clifford_t,
 )
 
-LayeringMethod = Literal["bare", "v2", "v3", "singleton"]
+LayeringMethod = Literal["bare", "v2", "singleton"]
 PipelineName = Literal["gs", "sk"]
 
 
@@ -40,10 +40,14 @@ class PipelineConfig:
         pipeline: Which pipeline to execute ('gs' for Gridsynth or 'sk' for Solovay-Kitaev).
         gridsynth_precision: Precision passed to Gridsynth when pipeline='gs'.
         sk_recursion: Recursion depth for Solovay-Kitaev when pipeline='sk'.
-        layering_method: PBC layering strategy ('bare', 'v2', 'v3', or 'singleton').
-        layering_max_checks: Optional bound used with layered merging (maps v2 + bound to v3 behavior).
+        layering_method: PBC layering strategy ('bare', 'v2', or 'singleton').
+        layering_max_checks: Optional bound on v2's backward layer scan; ignored for other methods.
         optimize_t_maxiter: Number of T-merging iterations for the PBC step (0 disables optimization).
         prefer_cpp: Prefer the nwqec C++ backend for Gridsynth when available.
+        use_nwqec_pbc: Use the nwqec C++ PBC adapter when available; set False to
+            force the Python PBC pipeline (`RotationPauliCirc` + layering pass).
+            Useful for validating the Python path or for layer-count metrics that
+            the C++ path doesn't expose.
         calculate_fidelity: If True, compute fidelity between the original and Clifford+T circuits.
         return_intermediate: Request intermediate circuits from transpilers (recommended for fidelity).
         max_workers: Optional worker cap for the parallel PBC converter.
@@ -59,6 +63,7 @@ class PipelineConfig:
     optimize_pbc: bool = False
     optimize_t_maxiter: int = 5
     prefer_cpp: bool = True
+    use_nwqec_pbc: bool = True
     calculate_fidelity: bool = True
     return_intermediate: bool = True
     max_workers: Optional[int] = None
@@ -219,22 +224,17 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     )
 
     # Step 2: PBC conversion
-    effective_layering_method = (
-        "v3"
-        if config.layering_method == "v2" and config.layering_max_checks is not None
-        else config.layering_method
-    )
     pbc_start = time.time()
     pbc_circuit, pbc_stats = convert_to_pbc_circuit(
         clifford_t_circuit.copy(),
         optimize_pbc=config.optimize_pbc,
         optimize_t_maxiter=config.optimize_t_maxiter,
         if_print_rpc=False,
-        layering_method=effective_layering_method,
+        layering_method=config.layering_method,
         layering_max_checks=config.layering_max_checks,
         output_prefix=config.pbc_output_prefix,
         max_workers=config.max_workers,
-        use_nwqec=True,
+        use_nwqec=config.use_nwqec_pbc,
     )
     timings["pbc_conversion_time"] = time.time() - pbc_start
     if config.pbc_output_prefix:
@@ -279,7 +279,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
 
     parameters.update(
         {
-            "layering_method": effective_layering_method,
+            "layering_method": config.layering_method,
             "layering_max_checks": config.layering_max_checks,
             "optimize_t_maxiter": config.optimize_t_maxiter,
             "max_workers": config.max_workers,

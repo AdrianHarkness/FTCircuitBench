@@ -3,7 +3,9 @@ Fidelity calculation module for FTCircuitBench.
 Provides scalable fidelity calculation methods for large quantum circuits.
 """
 
+import functools
 import multiprocessing
+import warnings
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -22,22 +24,40 @@ from ftcircuitbench.decomposer import (
 # DEFAULT_GRIDSYNTH_PRECISION is kept for backward compatibility with older tests
 DEFAULT_GRIDSYNTH_PRECISION = 5
 MAX_QUBITS_FOR_FIDELITY = 7  # Maximum qubits for traditional unitary-based fidelity
+# Per-gate fidelity at or above this is considered a "good" decomposition.
+FAILED_DECOMPOSITION_THRESHOLD = 0.999
+
+
+def _unitary_process_fidelity_1q(approx_op: Operator, ideal_op: Operator) -> float:
+    """
+    Closed-form process (entanglement) fidelity for two single-qubit unitaries:
+    F = |tr(U_approx^dagger U_ideal)|^2 / d^2 with d=2.
+
+    Numerically equivalent to qiskit.quantum_info.process_fidelity(U, V,
+    require_cp=False, require_tp=False) for unitary Operators, but avoids the
+    Choi-state construction qiskit performs internally.
+    """
+    # np.vdot(a, b) computes sum_ij conj(a[i,j]) * b[i,j] = tr(a^dagger b).
+    trace = np.vdot(approx_op.data, ideal_op.data)
+    return float((trace * trace.conjugate()).real / 4.0)
 
 
 def _calculate_single_rz_fidelity(
-    args: Tuple[str, float, int],
+    args: Tuple[str, float, int, Optional[str]],
 ) -> Tuple[str, float, float]:
     """
     Calculate fidelity for a single RZ gate decomposition.
     This function is designed to work with multiprocessing.
 
     Args:
-        args: Tuple of (theta_str, theta_value, gridsynth_precision)
+        args: Tuple of (theta_str, theta_value, gridsynth_precision,
+              precomputed_decomp). When precomputed_decomp is not None it is
+              used directly and gridsynth is not invoked.
 
     Returns:
         Tuple of (theta_str, theta_value, fidelity)
     """
-    theta_str, theta_value, gridsynth_precision = args
+    theta_str, theta_value, gridsynth_precision, precomputed_decomp = args
 
     try:
         # Create ideal RZ unitary
@@ -45,10 +65,12 @@ def _calculate_single_rz_fidelity(
         ideal_rz_qc.rz(theta_value, 0)
         ideal_rz_unitary = Operator(ideal_rz_qc)
 
-        # Get gridsynth decomposition
-        decomposed_sequence_str = _run_gridsynth_cli(
-            theta_str, precision=gridsynth_precision
-        )
+        if precomputed_decomp is not None:
+            decomposed_sequence_str = precomputed_decomp
+        else:
+            decomposed_sequence_str = _run_gridsynth_cli(
+                theta_str, precision=gridsynth_precision
+            )
 
         if not decomposed_sequence_str or all(
             g in "IW" for g in decomposed_sequence_str
@@ -60,10 +82,7 @@ def _calculate_single_rz_fidelity(
         approx_qc = create_circuit_from_gate_string(decomposed_sequence_str)
         approx_unitary = Operator(approx_qc)
 
-        # Calculate fidelity for this RZ gate
-        fid = process_fidelity(
-            approx_unitary, ideal_rz_unitary, require_cp=False, require_tp=False
-        )
+        fid = _unitary_process_fidelity_1q(approx_unitary, ideal_rz_unitary)
 
         return theta_str, theta_value, fid
 
@@ -78,6 +97,7 @@ def rz_product_fidelity(
     original_qc: QuantumCircuit,
     gridsynth_precision: int,
     use_multiprocessing: bool = True,
+    decomp_map: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """
     Calculate fidelity by tracking individual RZ gate decomposition fidelities.
@@ -85,20 +105,30 @@ def rz_product_fidelity(
 
     The method works by:
     1. Identifying all RZ gates in the circuit
-    2. Decomposing each RZ gate using Gridsynth
+    2. Decomposing each RZ gate using Gridsynth (or reusing a precomputed decomposition)
     3. Calculating individual fidelity for each decomposition
     4. Computing overall fidelity as the product of individual fidelities
 
     This approach scales linearly with the number of RZ gates rather than exponentially with qubits.
 
+    If a decomposition map is supplied (either via the ``decomp_map`` argument or
+    on ``original_qc.metadata["gridsynth_decomp"]``), gridsynth is not invoked
+    again for any angle present in the map — the cached gate string is reused.
+
     Args:
         original_qc: The original quantum circuit
         gridsynth_precision: Precision for gridsynth decomposition
         use_multiprocessing: Whether to use multiprocessing for parallel RZ decomposition
+        decomp_map: Optional ``{theta_str -> gate_string}`` from a prior
+            gridsynth run; when provided, avoids redundant subprocess calls.
 
     Returns:
         dict: Contains overall fidelity, individual fidelities, and metadata
     """
+    if decomp_map is None:
+        md = getattr(original_qc, "metadata", None)
+        if isinstance(md, dict):
+            decomp_map = md.get("gridsynth_decomp")
     # Find all RZ gates in the circuit
     rz_gates = []
     for idx, item in enumerate(original_qc.data):
@@ -129,73 +159,51 @@ def rz_product_fidelity(
             "method": "rz_product_fidelity",
         }
 
-    # Calculate individual fidelities
-    individual_fidelities = []
-    failed_decompositions = 0
+    # Per-gate fidelity is a pure function of theta_str (and the gridsynth
+    # decomposition it implies), so we compute once per *unique* angle and
+    # fan the result back out to every occurrence.
+    unique_args: Dict[str, Tuple[str, float, int, Optional[str]]] = {}
+    for _, _, theta_str, theta in rz_gates:
+        if theta_str not in unique_args:
+            unique_args[theta_str] = (
+                theta_str,
+                theta,
+                gridsynth_precision,
+                decomp_map.get(theta_str) if decomp_map else None,
+            )
+    unique_arg_list = list(unique_args.values())
 
-    if use_multiprocessing and len(rz_gates) > 1:
-        # Use multiprocessing for parallel calculation
+    unique_fids: Dict[str, float] = {}
+    if use_multiprocessing and len(unique_arg_list) > 1:
         try:
             with multiprocessing.Pool() as pool:
-                # Prepare arguments for multiprocessing
-                args_list = [
-                    (theta_str, theta, gridsynth_precision)
-                    for _, _, theta_str, theta in rz_gates
-                ]
-
-                # Calculate fidelities in parallel
-                results = pool.map(_calculate_single_rz_fidelity, args_list)
-
-                # Extract fidelities from results
-                for theta_str, theta_value, fid in results:
-                    individual_fidelities.append(fid)
-                    if (
-                        fid < 0.999
-                    ):  # Threshold for considering it a "failed" decomposition
-                        failed_decompositions += 1
-
-        except Exception:
-            # Fallback to sequential processing if multiprocessing fails
+                results = pool.map(_calculate_single_rz_fidelity, unique_arg_list)
+                for _ts, _theta_value, fid in results:
+                    unique_fids[_ts] = fid
+        except Exception as e:
+            warnings.warn(
+                f"rz_product_fidelity multiprocessing failed ({e!r}); "
+                f"falling back to sequential processing.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             use_multiprocessing = False
+            unique_fids = {}
 
-    if not use_multiprocessing or len(rz_gates) <= 1:
-        # Sequential processing
-        for gate_idx, (idx, qubit, theta_str, theta) in enumerate(rz_gates):
-            try:
-                # Create ideal RZ unitary
-                ideal_rz_qc = QuantumCircuit(1)
-                ideal_rz_qc.rz(theta, 0)
-                ideal_rz_unitary = Operator(ideal_rz_qc)
+    if not use_multiprocessing or len(unique_arg_list) <= 1:
+        for args in unique_arg_list:
+            _ts, _theta_value, fid = _calculate_single_rz_fidelity(args)
+            unique_fids[_ts] = fid
 
-                # Get gridsynth decomposition
-                decomposed_sequence_str = _run_gridsynth_cli(
-                    theta_str, precision=gridsynth_precision
-                )
-
-                if not decomposed_sequence_str or all(
-                    g in "IW" for g in decomposed_sequence_str
-                ):
-                    individual_fidelities.append(1.0)  # Identity decomposition
-                    continue
-
-                # Create circuit from decomposition
-                approx_qc = create_circuit_from_gate_string(decomposed_sequence_str)
-                approx_unitary = Operator(approx_qc)
-
-                # Calculate fidelity for this RZ gate
-                fid = process_fidelity(
-                    approx_unitary, ideal_rz_unitary, require_cp=False, require_tp=False
-                )
-                individual_fidelities.append(fid)
-
-            except Exception as e:
-                # Re-raise the exception to expose the real error
-                raise RuntimeError(
-                    f"Failed to calculate fidelity for RZ gate {gate_idx}: {str(e)}"
-                ) from e
+    individual_fidelities: List[float] = [
+        unique_fids[theta_str] for _, _, theta_str, _ in rz_gates
+    ]
 
     # Calculate overall fidelity as product of individual fidelities
     overall_fidelity = np.prod(individual_fidelities)
+    failed_decompositions = sum(
+        1 for f in individual_fidelities if f < FAILED_DECOMPOSITION_THRESHOLD
+    )
 
     result = {
         "overall_fidelity": overall_fidelity,
@@ -213,10 +221,20 @@ def rz_product_fidelity(
         ),
         "status": "success" if failed_decompositions == 0 else "partial_failure",
         "method": "rz_product_fidelity",
-        "multiprocessing_used": use_multiprocessing and len(rz_gates) > 1,
+        "multiprocessing_used": use_multiprocessing and len(unique_arg_list) > 1,
+        "unique_angle_count": len(unique_arg_list),
     }
 
     return result
+
+
+@functools.lru_cache(maxsize=None)
+def _sk_basic_approximations(
+    basis_gates: Tuple[str, ...] = ("h", "s", "t", "tdg"), depth: int = 5
+):
+    # Cache the basis-approximation library: it depends only on (basis_gates, depth)
+    # and is by far the most expensive part of an SK pass.
+    return generate_basic_approximations(basis_gates=list(basis_gates), depth=depth)
 
 
 def _synthesize_single_rz_with_sk(
@@ -236,9 +254,10 @@ def _synthesize_single_rz_with_sk(
     src = QuantumCircuit(1)
     src.rz(theta_value, 0)
 
-    # Build SK approximations library
-    approx = generate_basic_approximations(basis_gates=["h", "s", "t", "tdg"], depth=5)
-    sk = SolovayKitaev(recursion_degree=recursion_degree, basic_approximations=approx)
+    sk = SolovayKitaev(
+        recursion_degree=recursion_degree,
+        basic_approximations=_sk_basic_approximations(),
+    )
 
     # Apply SK synthesis pass to approximate the single-qubit unitary
     approx_qc = sk(src)
@@ -294,29 +313,45 @@ def rz_product_fidelity_sk(
 
         approx_qc = _synthesize_single_rz_with_sk(theta_value, recursion_degree)
         approx_u = Operator(approx_qc)
-        return float(
-            process_fidelity(approx_u, ideal_u, require_cp=False, require_tp=False)
-        )
+        return _unitary_process_fidelity_1q(approx_u, ideal_u)
 
-    individual_fidelities: List[float] = []
-    if use_multiprocessing and len(rz_thetas) > 1:
+    # Per-theta fidelity is a pure function of the angle, so we synthesize
+    # once per unique theta and fan the result out to every occurrence.
+    unique_thetas = list(dict.fromkeys(rz_thetas))
+
+    unique_fids: Dict[float, float] = {}
+    if use_multiprocessing and len(unique_thetas) > 1:
         try:
             with multiprocessing.Pool() as pool:
-                individual_fidelities = pool.map(_fid_for_theta, rz_thetas)
-        except Exception:
-            # Fallback to sequential if multiprocessing fails
-            individual_fidelities = [_fid_for_theta(theta) for theta in rz_thetas]
+                for theta, fid in zip(
+                    unique_thetas, pool.map(_fid_for_theta, unique_thetas)
+                ):
+                    unique_fids[theta] = fid
+        except Exception as e:
+            warnings.warn(
+                f"rz_product_fidelity_sk multiprocessing failed ({e!r}); "
+                f"falling back to sequential processing.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            use_multiprocessing = False
+            unique_fids = {t: _fid_for_theta(t) for t in unique_thetas}
     else:
-        individual_fidelities = [_fid_for_theta(theta) for theta in rz_thetas]
+        unique_fids = {t: _fid_for_theta(t) for t in unique_thetas}
+
+    individual_fidelities: List[float] = [unique_fids[t] for t in rz_thetas]
 
     overall_fidelity = (
         float(np.prod(individual_fidelities)) if individual_fidelities else 1.0
+    )
+    failed_decompositions = sum(
+        1 for f in individual_fidelities if f < FAILED_DECOMPOSITION_THRESHOLD
     )
     return {
         "overall_fidelity": overall_fidelity,
         "individual_fidelities": individual_fidelities,
         "rz_gate_count": len(rz_thetas),
-        "failed_decompositions": 0,
+        "failed_decompositions": failed_decompositions,
         "min_individual_fidelity": (
             min(individual_fidelities) if individual_fidelities else 1.0
         ),
@@ -326,9 +361,10 @@ def rz_product_fidelity_sk(
         "avg_individual_fidelity": (
             np.mean(individual_fidelities) if individual_fidelities else 1.0
         ),
-        "status": "success",
+        "status": "success" if failed_decompositions == 0 else "partial_failure",
         "method": "rz_product_fidelity_sk",
-        "multiprocessing_used": use_multiprocessing and len(rz_thetas) > 1,
+        "multiprocessing_used": use_multiprocessing and len(unique_thetas) > 1,
+        "unique_angle_count": len(unique_thetas),
     }
 
 

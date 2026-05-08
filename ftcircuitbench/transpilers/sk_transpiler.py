@@ -1,57 +1,61 @@
 # ./ftcircuitbench/transpilers/sk_transpiler.py
 """
-Transpilation to Solovay-Kitaev basis (cx, h, s, t, tdg).
+Solovay-Kitaev transpilation to Clifford+T basis.
+
+Pipeline shape is the canonical one defined in `_basis.py`. Only the RZ-synthesis
+step is engine-specific (Solovay-Kitaev approximation here).
 """
 
 import warnings
 from typing import Tuple, Union
 
 import numpy as np
-from qiskit import QuantumCircuit, transpile
-from qiskit.qasm2 import dump  # For saving to QASM, if needed as utility
+from qiskit import QuantumCircuit
+from qiskit.qasm2 import dump
 from qiskit.synthesis import generate_basic_approximations
 from qiskit.transpiler.passes.synthesis import SolovayKitaev
 
-# Define the target single-qubit basis for Solovay-Kitaev and subsequent PBC processing
-SOLOVAY_KITAEV_BASIS = ["h", "s", "t", "tdg"]
-# Intermediate basis before SK, ensuring Rz gates are present for SK to act upon
-INTERMEDIATE_RZ_BASIS = ["cx", "h", "s", "rz"]
+from ._basis import (
+    INTERMEDIATE_RZ_BASIS,
+    PBC_COMPATIBLE_CLIFFORD_T_BASIS,
+    enforce_pbc_basis,
+    is_clifford_t_basis,
+    prepare_input,
+    to_intermediate_rz,
+)
+
+SOLOVAY_KITAEV_BASIS = ["h", "s", "sdg", "t", "tdg", "x", "y", "z"]
 
 
 def transpile_to_solovay_kitaev_clifford_t(
-    circuit: QuantumCircuit,
+    circuit: Union[QuantumCircuit, str],
     recursion_degree: int = 3,
     remove_final_measurements: bool = True,
     return_intermediate: bool = False,
+    is_file: bool = False,
 ) -> Union[QuantumCircuit, Tuple[QuantumCircuit, QuantumCircuit]]:
+    """Transpile to Clifford+T via Solovay-Kitaev synthesis.
+
+    Pipeline:
+      1. prepare_input (QC/QASM, optional measurement removal)
+      2. early-return if already in PBC Clifford+T basis
+      3. to_intermediate_rz (canonical {cx, h, s, rz} basis)
+      4. Solovay-Kitaev synthesis of remaining single-qubit rotations
+      5. enforce_pbc_basis ({cx, h, s, t, tdg})  (cleans up sdg etc.)
     """
-    Transpiles an input QuantumCircuit.
-    1. First to an intermediate basis {cx, h, s, rz}.
-    2. Then applies Solovay-Kitaev synthesis to approximate Rz gates (and other
-       single-qubit gates) into the target basis {cx, h, s, t, tdg}.
-
-    Args:
-        circuit (QuantumCircuit): The input quantum circuit.
-        recursion_degree (int): The recursion degree for Solovay-Kitaev.
-        remove_final_measurements (bool): If True, removes final measurements
-                                          before transpilation. PBC usually redefines measurements.
-
-    Returns:
-        QuantumCircuit: The circuit transpiled to the Solovay-Kitaev basis.
-    """
-    processed_circuit = circuit.copy()
-
-    if remove_final_measurements:
-        processed_circuit.remove_final_measurements(inplace=True)
-
-    # Step 1: Transpile to intermediate RZ basis
-    print("Transpiling to intermediate RZ basis...")
-    rz_circuit = transpile(
-        processed_circuit, basis_gates=INTERMEDIATE_RZ_BASIS, optimization_level=0
+    processed_circuit = prepare_input(
+        circuit, is_file=is_file, remove_final_measurements=remove_final_measurements
     )
+
+    if is_clifford_t_basis(processed_circuit):
+        print("      Circuit is already in Clifford+T basis. Skipping SK transpilation.")
+        return (processed_circuit, processed_circuit) if return_intermediate else processed_circuit
+
+    print("Transpiling to intermediate RZ basis...")
+    rz_circuit = to_intermediate_rz(processed_circuit)
     print("Transpiled to intermediate RZ basis.")
-    # Step 2: Apply Solovay-Kitaev synthesis
-    # Build basic approximations with warnings suppressed (numpy.linalg may warn on det)
+
+    # Solovay-Kitaev approximation library setup; numpy.linalg can warn benignly.
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", category=RuntimeWarning, module=r".*numpy\.linalg.*"
@@ -67,7 +71,6 @@ def transpile_to_solovay_kitaev_clifford_t(
         recursion_degree=recursion_degree, basic_approximations=approx
     )
 
-    # Count gates that need SK synthesis
     gates_to_synthesize = [
         (i, item.operation, item.qubits)
         for i, item in enumerate(rz_circuit.data)
@@ -76,53 +79,27 @@ def transpile_to_solovay_kitaev_clifford_t(
 
     if gates_to_synthesize:
         print(f"      Found {len(gates_to_synthesize)} gates to synthesize...")
-
-        # Apply SK synthesis (suppress noisy numpy.linalg RuntimeWarnings)
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", category=RuntimeWarning, module=r".*numpy\.linalg.*"
             )
             old_err = np.seterr(divide="ignore", invalid="ignore")
             try:
-                discretized_circuit = sk_pass(rz_circuit)  # leaves sdg gates
+                discretized_circuit = sk_pass(rz_circuit)
             finally:
                 np.seterr(**old_err)
-
-        # Step 3: Final transpilation to target Clifford+T basis
-        # discretized_circuit = transpile(
-        #     discretized_circuit, basis_gates=SOLOVAY_KITAEV_BASIS + ["cx"], optimization_level=0
-        # )  # Disable optimization for baseline
     else:
         print("      No gates requiring Solovay-Kitaev synthesis found")
         discretized_circuit = rz_circuit
-        # discretized_circuit = transpile(
-        #     rz_circuit, basis_gates=SOLOVAY_KITAEV_BASIS, optimization_level=0
-        # )  # Disable optimization for baseline
 
-    # Verify we're in the correct basis
-    ops = discretized_circuit.count_ops()
-    unexpected_gates = [
-        gate
-        for gate in ops
-        if gate not in SOLOVAY_KITAEV_BASIS + ["cx", "barrier", "reset"]
-    ]
-    if unexpected_gates:
-        print(
-            f"      Warning: Unexpected gates found after SK synthesis: {unexpected_gates}"
-        )
-
-    if return_intermediate:
-        return rz_circuit, discretized_circuit
-    return discretized_circuit
+    discretized_circuit = enforce_pbc_basis(discretized_circuit)
+    return (rz_circuit, discretized_circuit) if return_intermediate else discretized_circuit
 
 
 def transpile_qasm_file_to_sk(
     input_qasm_path: str, output_qasm_path: str, recursion_degree: int
 ):
-    """
-    Helper to load QASM, transpile to Solovay-Kitaev basis, and save QASM.
-    (Based on the original transpile_sk.py main block)
-    """
+    """Helper: load QASM, transpile via Solovay-Kitaev, dump QASM."""
     circuit = QuantumCircuit.from_qasm_file(input_qasm_path)
     discretized_circuit = transpile_to_solovay_kitaev_clifford_t(
         circuit, recursion_degree
@@ -130,3 +107,11 @@ def transpile_qasm_file_to_sk(
     with open(output_qasm_path, "w") as out_file:
         dump(discretized_circuit, out_file)
     return discretized_circuit
+
+
+__all__ = [
+    "INTERMEDIATE_RZ_BASIS",
+    "SOLOVAY_KITAEV_BASIS",
+    "transpile_to_solovay_kitaev_clifford_t",
+    "transpile_qasm_file_to_sk",
+]

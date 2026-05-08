@@ -23,16 +23,33 @@ def parse_arguments():
     parser.add_argument("--sk-recursion", type=int, default=1)
     parser.add_argument(
         "--layering-method",
-        choices=["bare", "v2", "v3", "singleton"],
+        choices=["bare", "v2", "singleton"],
         default="v2",
     )
     parser.add_argument(
         "--layering-max-checks",
         type=int,
         default=None,
-        help="If set, bound layering by checking only the last K layers (uses v3)",
+        help="Bound v2 layering to the last K layers when scanning for insertion (ignored for other methods)",
     )
     parser.add_argument("--pipeline", choices=["gs", "sk", "both"], default="gs")
+    parser.add_argument(
+        "--gs-backend",
+        choices=["auto", "cpp", "python"],
+        default="auto",
+        help="Gridsynth backend: 'cpp' uses the nwqec C++ implementation, 'python' "
+        "forces the Python implementation, 'auto' (default) prefers cpp when "
+        "nwqec is installed. Ignored for the SK pipeline.",
+    )
+    parser.add_argument(
+        "--pbc-backend",
+        choices=["auto", "cpp", "python"],
+        default="auto",
+        help="PBC conversion backend: 'cpp' uses the nwqec C++ PBC adapter, "
+        "'python' forces the Python `RotationPauliCirc` + layering pass, 'auto' "
+        "(default) uses cpp when nwqec is installed. The Python path exposes "
+        "layer-count metrics (`pbc_rotation_layers`) that the C++ path doesn't.",
+    )
     parser.add_argument(
         "--optimize-t-maxiter",
         type=int,
@@ -70,7 +87,10 @@ def _build_pipeline_jobs(
     optimize_t_maxiter: int,
     max_workers: Optional[int],
     calculate_fidelity: bool,
+    gs_backend: str = "auto",
+    pbc_backend: str = "auto",
 ) -> List[Dict[str, object]]:
+    use_nwqec_pbc = pbc_backend != "python"
     jobs: List[Dict[str, object]] = []
     if pipeline in ["gs", "both"]:
         param_str = get_output_param_str("gs", gridsynth_precision, "precision_level")
@@ -87,6 +107,8 @@ def _build_pipeline_jobs(
                     return_intermediate=True,
                     calculate_fidelity=calculate_fidelity,
                     max_workers=max_workers,
+                    prefer_cpp=(gs_backend != "python"),
+                    use_nwqec_pbc=use_nwqec_pbc,
                     clifford_output_path=get_clifford_t_qasm_path(
                         "clifford_t_output", input_base, param_str
                     ),
@@ -115,6 +137,7 @@ def _build_pipeline_jobs(
                     return_intermediate=True,
                     calculate_fidelity=calculate_fidelity,
                     max_workers=max_workers,
+                    use_nwqec_pbc=use_nwqec_pbc,
                     clifford_output_path=get_clifford_t_qasm_path(
                         "clifford_t_output", input_base, param_str
                     ),
@@ -174,6 +197,8 @@ def run_analysis(
     detailed: bool = False,
     max_workers: Optional[int] = None,
     skip_fidelity: bool = False,
+    gs_backend: str = "auto",
+    pbc_backend: str = "auto",
 ):
     """
     Programmatic API to run FTCircuitBench analysis using the packaged API.
@@ -183,10 +208,26 @@ def run_analysis(
     if not os.path.exists(qasm_file):
         raise FileNotFoundError(f"QASM file '{qasm_file}' not found.")
 
+    from ftcircuitbench.transpilers import is_nwqec_available
+
+    if gs_backend == "cpp" and pipeline in ("gs", "both") and not is_nwqec_available():
+        raise RuntimeError(
+            "--gs-backend=cpp requested, but nwqec is not installed. "
+            "Install nwqec or use --gs-backend=auto/python."
+        )
+    if pbc_backend == "cpp" and not is_nwqec_available():
+        raise RuntimeError(
+            "--pbc-backend=cpp requested, but nwqec is not installed. "
+            "Install nwqec or use --pbc-backend=auto/python."
+        )
+
     input_base = os.path.splitext(os.path.basename(qasm_file))[0]
     print("=== FTCircuitBench Analysis ===")
     print(f"Input: {qasm_file}")
     print(f"PBC Optimization: {'ON' if optimize_pbc else 'OFF'}")
+    if pipeline in ("gs", "both"):
+        print(f"GS backend: {gs_backend}")
+    print(f"PBC backend: {pbc_backend}")
 
     jobs = _build_pipeline_jobs(
         input_base=input_base,
@@ -199,6 +240,8 @@ def run_analysis(
         optimize_t_maxiter=optimize_t_maxiter,
         max_workers=max_workers,
         calculate_fidelity=not skip_fidelity,
+        gs_backend=gs_backend,
+        pbc_backend=pbc_backend,
     )
 
     configs = [job["config"] for job in jobs]
@@ -258,6 +301,8 @@ def main():
         detailed=args.detailed,
         max_workers=args.max_workers,
         skip_fidelity=args.skip_fidelity,
+        gs_backend=args.gs_backend,
+        pbc_backend=args.pbc_backend,
     )
 
 

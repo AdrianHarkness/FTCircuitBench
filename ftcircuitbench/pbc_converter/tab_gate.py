@@ -358,6 +358,33 @@ class TableauForGate:
         else:
             return np.sum(commutation) == 0
 
+    def _swap_xz(self, row_or_rows):
+        """Return the X<->Z-swapped stabilizer block of a row (or rows).
+
+        Used by `layer_v2` to precompute the swap once per new Pauli and reuse it
+        across the backward layer scan, instead of repeating the swap inside
+        every `is_commute` call.
+
+        Input shape: (..., 2*n+1) bool. Output shape: (rows, 2*n) int.
+        """
+        arr = np.asarray(row_or_rows)
+        if arr.ndim == 1:
+            arr = arr.reshape(1, -1)
+        n = self.qubits
+        out = np.empty((arr.shape[0], 2 * n), dtype=int)
+        out[:, :n] = arr[:, n : 2 * n]  # Z part
+        out[:, n:] = arr[:, :n]  # X part
+        return out
+
+    def _commutes_with_swapped(self, swapped_2nq):
+        """Fast commutation check for an already-XZ-swapped row block.
+
+        `swapped_2nq` must have shape (rows, 2*n) and dtype int. Returns True iff
+        every input row commutes with every stabilizer in this tableau.
+        """
+        commutation = (swapped_2nq @ self.stabilizers().T) & 1
+        return not np.any(commutation)
+
     def append(self, stab_in):
         """
         This function append a new stabilizer into the tableau.
@@ -418,6 +445,36 @@ class TableauForGate:
         )
         return
 
+    def sdg(self, index):
+        # S†: X -> -Y, Y -> X, Z -> Z. Equivalent to S applied 3 times.
+        # Phase flips iff (X_i & ~Z_i) — derivable from composing S thrice.
+        self.tableau[:, -1] = self.tableau[:, -1] ^ (
+            self.tableau[:, index] & (~self.tableau[:, self.qubits + index])
+        )
+        self.tableau[:, self.qubits + index] = (
+            self.tableau[:, self.qubits + index] ^ self.tableau[:, index]
+        )
+        return
+
+    def x(self, index):
+        # X anticommutes with Z; flips phase where Z_i = 1.
+        self.tableau[:, -1] = (
+            self.tableau[:, -1] ^ self.tableau[:, self.qubits + index]
+        )
+        return
+
+    def y(self, index):
+        # Y anticommutes with both X and Z; flips phase where (X_i XOR Z_i).
+        self.tableau[:, -1] = self.tableau[:, -1] ^ (
+            self.tableau[:, index] ^ self.tableau[:, self.qubits + index]
+        )
+        return
+
+    def z(self, index):
+        # Z anticommutes with X; flips phase where X_i = 1.
+        self.tableau[:, -1] = self.tableau[:, -1] ^ self.tableau[:, index]
+        return
+
     def cx(self, ctrl, targ):
         x_ctrl = self.tableau[:, ctrl]
         z_ctrl = self.tableau[:, self.qubits + ctrl]
@@ -438,6 +495,14 @@ class TableauForGate:
             self.h(q_indices[0])
         elif gate_name == "s":
             self.s(q_indices[0])
+        elif gate_name == "sdg":
+            self.sdg(q_indices[0])
+        elif gate_name == "x":
+            self.x(q_indices[0])
+        elif gate_name == "y":
+            self.y(q_indices[0])
+        elif gate_name == "z":
+            self.z(q_indices[0])
         elif gate_name == "cx":
             self.cx(q_indices[0], q_indices[1])
         else:
@@ -725,13 +790,25 @@ class TableauPauliBasis(TableauForGate):
         from the end when determining insertion position. This bounds the number
         of commutation checks per insertion while preserving operation order.
         """
-        shape = (1, 2 * self.qubits + 1)
+        n = self.qubits
+        shape = (1, 2 * n + 1)
 
-        tab_now = self.tableau[0].reshape(shape).copy()
-        tab_now = TableauPauliBasis(tab_now)
+        # Pack the X|Z support of every input row into Python ints once. A
+        # Python int with one bit per qubit lets the per-layer prune below run
+        # as a single int-AND + truthiness check, much cheaper than numpy ops.
+        x_part = self.tableau[:, :n]
+        z_part = self.tableau[:, n : 2 * n]
+        support_bool = x_part | z_part  # (N, n)
+        powers = (1 << np.arange(n, dtype=np.int64))
+        row_support_masks = (support_bool.astype(np.int64) * powers).sum(axis=1)
+        # Convert to Python ints so OR'ing across rows uses arbitrary-precision
+        # arithmetic (n can exceed 63 in principle).
+        row_support_masks = [int(m) for m in row_support_masks]
+
+        first = self.tableau[0]
+        tab_now = TableauPauliBasis(first.reshape(shape).copy())
         t_layers = [tab_now]
-
-        # print(t_layers)
+        layer_supports: list[int] = [row_support_masks[0]]
 
         add_new = False
         add_old = False
@@ -740,6 +817,9 @@ class TableauPauliBasis(TableauForGate):
             range(1, self.stab_counts), desc="      Layering T-gates", leave=False
         ):
             tab_temp = self.tableau[j].reshape(shape).copy()
+            new_support = row_support_masks[j]
+            # Precompute the X<->Z-swapped row once; reused for every layer check below.
+            swapped = self._swap_xz(tab_temp)
             # Determine how many layers to inspect from the end
             total_layers = len(t_layers)
             if max_layer_checks is None or max_layer_checks >= total_layers:
@@ -750,8 +830,13 @@ class TableauPauliBasis(TableauForGate):
             insertion_done = False
             # Scan from the back towards the lower_bound
             for k in range(total_layers - 1, lower_bound - 1, -1):
+                # Support-pruning: if the new Pauli has no qubit in common with
+                # this layer's combined support, they trivially commute. Skip
+                # the matmul.
+                if not (new_support & layer_supports[k]):
+                    continue
                 tab = t_layers[k]
-                tab_commute = tab.is_commute(tab_temp)
+                tab_commute = tab._commutes_with_swapped(swapped)
                 if not tab_commute:
                     if k == len(t_layers) - 1:
                         ## this means the current Pauli string do not commute with the latest layers, so need to create a new one.
@@ -761,6 +846,7 @@ class TableauPauliBasis(TableauForGate):
                     else:
                         ## we find the earliest layer that does not commute with the current Pauli string. Add this pauli string to the next layer
                         t_layers[k + 1].append(tab_temp)
+                        layer_supports[k + 1] |= new_support
                         add_old = True
                         insertion_done = True
                         break
@@ -768,6 +854,7 @@ class TableauPauliBasis(TableauForGate):
             if add_new:
                 tab_new = TableauPauliBasis(tab_temp)
                 t_layers.append(tab_new)
+                layer_supports.append(new_support)
                 add_new = False
                 continue
 
@@ -780,17 +867,7 @@ class TableauPauliBasis(TableauForGate):
                 if not insertion_done:
                     target_index = 0 if lower_bound == 0 else lower_bound
                     t_layers[target_index].append(tab_temp)
+                    layer_supports[target_index] |= new_support
                 continue
 
         return t_layers
-
-    def layer_v3(self, max_layer_checks: Optional[int] = None):
-        """
-        Bounded version of layer_v2 that preserves operation order while limiting
-        the number of commutation checks per insertion. This simply wraps layer_v2.
-
-        Args:
-            max_layer_checks: If provided, only the last K layers are checked
-                              for insertion; otherwise scans all layers (same as v2).
-        """
-        return self.layer_v2(max_layer_checks=max_layer_checks)

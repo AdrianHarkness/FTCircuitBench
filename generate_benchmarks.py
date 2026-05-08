@@ -251,7 +251,7 @@ def main():
     )
     parser.add_argument(
         "--layering-method",
-        choices=["bare", "v2", "v3", "singleton"],
+        choices=["bare", "v2", "singleton"],
         default="v2",
         help="PBC layering method to use (default: v2)",
     )

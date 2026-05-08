@@ -1,0 +1,286 @@
+{
+  "seed": 20260508,
+  "runs": 3,
+  "results": [
+    {
+      "case": "micro/small_sparse",
+      "method": "bare",
+      "best_seconds": 0.003212834009900689,
+      "rotations": 200,
+      "layers": 87,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_sparse",
+      "method": "v2",
+      "best_seconds": 0.0032877920020837337,
+      "rotations": 200,
+      "layers": 73,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_sparse",
+      "method": "v2_max16",
+      "best_seconds": 0.0034844579931814224,
+      "rotations": 200,
+      "layers": 73,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_sparse",
+      "method": "v2_max4",
+      "best_seconds": 0.0033472079958301038,
+      "rotations": 200,
+      "layers": 73,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_dense",
+      "method": "bare",
+      "best_seconds": 0.004438999982085079,
+      "rotations": 200,
+      "layers": 121,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_dense",
+      "method": "v2",
+      "best_seconds": 0.004702624981291592,
+      "rotations": 200,
+      "layers": 116,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_dense",
+      "method": "v2_max16",
+      "best_seconds": 0.004710500012151897,
+      "rotations": 200,
+      "layers": 116,
+      "extra": {}
+    },
+    {
+      "case": "micro/small_dense",
+      "method": "v2_max4",
+      "best_seconds": 0.004752583976369351,
+      "rotations": 200,
+      "layers": 116,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_sparse",
+      "method": "bare",
+      "best_seconds": 0.0158082080015447,
+      "rotations": 1000,
+      "layers": 304,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_sparse",
+      "method": "v2",
+      "best_seconds": 0.016514832997927442,
+      "rotations": 1000,
+      "layers": 204,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_sparse",
+      "method": "v2_max16",
+      "best_seconds": 0.016375209001125768,
+      "rotations": 1000,
+      "layers": 204,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_sparse",
+      "method": "v2_max4",
+      "best_seconds": 0.015404416975798085,
+      "rotations": 1000,
+      "layers": 204,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_dense",
+      "method": "bare",
+      "best_seconds": 0.02715587499551475,
+      "rotations": 1000,
+      "layers": 601,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_dense",
+      "method": "v2",
+      "best_seconds": 0.02873858402017504,
+      "rotations": 1000,
+      "layers": 576,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_dense",
+      "method": "v2_max16",
+      "best_seconds": 0.029149040987249464,
+      "rotations": 1000,
+      "layers": 576,
+      "extra": {}
+    },
+    {
+      "case": "micro/medium_dense",
+      "method": "v2_max4",
+      "best_seconds": 0.029143666004529223,
+      "rotations": 1000,
+      "layers": 576,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_sparse",
+      "method": "bare",
+      "best_seconds": 0.05064549998496659,
+      "rotations": 3000,
+      "layers": 930,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_sparse",
+      "method": "v2",
+      "best_seconds": 0.05408699999679811,
+      "rotations": 3000,
+      "layers": 636,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_sparse",
+      "method": "v2_max16",
+      "best_seconds": 0.05513799999607727,
+      "rotations": 3000,
+      "layers": 636,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_sparse",
+      "method": "v2_max4",
+      "best_seconds": 0.051921124977525324,
+      "rotations": 3000,
+      "layers": 638,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_dense",
+      "method": "bare",
+      "best_seconds": 0.10970033399644308,
+      "rotations": 3000,
+      "layers": 1815,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_dense",
+      "method": "v2",
+      "best_seconds": 0.11540395900374278,
+      "rotations": 3000,
+      "layers": 1720,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_dense",
+      "method": "v2_max16",
+      "best_seconds": 0.11623537499690428,
+      "rotations": 3000,
+      "layers": 1720,
+      "extra": {}
+    },
+    {
+      "case": "micro/large_dense",
+      "method": "v2_max4",
+      "best_seconds": 0.11459816599381156,
+      "rotations": 3000,
+      "layers": 1720,
+      "extra": {}
+    },
+    {
+      "case": "macro/small",
+      "method": "optimize_t/bare",
+      "best_seconds": 0.006941792002180591,
+      "rotations": 64,
+      "layers": 30,
+      "extra": {
+        "trace": [
+          64,
+          34,
+          32,
+          30
+        ]
+      }
+    },
+    {
+      "case": "macro/small",
+      "method": "optimize_t/v2",
+      "best_seconds": 0.004646916000638157,
+      "rotations": 64,
+      "layers": 30,
+      "extra": {
+        "trace": [
+          64,
+          30
+        ]
+      }
+    },
+    {
+      "case": "macro/medium",
+      "method": "optimize_t/bare",
+      "best_seconds": 0.048837083973921835,
+      "rotations": 379,
+      "layers": 165,
+      "extra": {
+        "trace": [
+          379,
+          187,
+          167,
+          165
+        ]
+      }
+    },
+    {
+      "case": "macro/medium",
+      "method": "optimize_t/v2",
+      "best_seconds": 0.030143374984618276,
+      "rotations": 379,
+      "layers": 129,
+      "extra": {
+        "trace": [
+          379,
+          129
+        ]
+      }
+    },
+    {
+      "case": "macro/large",
+      "method": "optimize_t/bare",
+      "best_seconds": 0.2578188329935074,
+      "rotations": 1172,
+      "layers": 514,
+      "extra": {
+        "trace": [
+          1172,
+          654,
+          552,
+          530,
+          518,
+          516,
+          514
+        ]
+      }
+    },
+    {
+      "case": "macro/large",
+      "method": "optimize_t/v2",
+      "best_seconds": 0.14125824999064207,
+      "rotations": 1172,
+      "layers": 380,
+      "extra": {
+        "trace": [
+          1172,
+          382,
+          380
+        ]
+      }
+    }
+  ]
+}
