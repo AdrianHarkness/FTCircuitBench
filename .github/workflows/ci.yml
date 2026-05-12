@@ -17,8 +17,8 @@ jobs:
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
@@ -28,14 +28,14 @@ jobs:
           ghc-version: "9.6"
           cabal-version: "3.10"
       - name: Cache cabal store
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.setup-haskell.outputs.cabal-store }}
           key: cabal-${{ runner.os }}-ghc9.6-gridsynth-v1
       - name: Install gridsynth
         run: |
           cabal update
-          cabal install gridsynth --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
+          cabal install newsynth --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
           echo "$HOME/.cabal/bin" >> "$GITHUB_PATH"
       - name: Sync deps
         run: uv sync --all-extras
@@ -46,8 +46,8 @@ jobs:
     name: Lint (ruff/black/isort)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
       - name: Sync deps
@@ -63,8 +63,8 @@ jobs:
     name: mypy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
       - name: Sync deps
@@ -76,8 +76,8 @@ jobs:
     name: Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
       - uses: haskell-actions/setup@v2
@@ -86,14 +86,14 @@ jobs:
           ghc-version: "9.6"
           cabal-version: "3.10"
       - name: Cache cabal store
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.setup-haskell.outputs.cabal-store }}
           key: cabal-${{ runner.os }}-ghc9.6-gridsynth-v1
       - name: Install gridsynth
         run: |
           cabal update
-          cabal install gridsynth --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
+          cabal install newsynth --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
           echo "$HOME/.cabal/bin" >> "$GITHUB_PATH"
       - name: Sync deps
         run: uv sync --all-extras

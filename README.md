@@ -176,7 +176,7 @@ See also `CITATION.cff` for machine-readable metadata.
 
 **`gridsynth` binary not found**
 
-The `gridsynth` Haskell binary enables the Python-fallback Gridsynth path; the C++ `nwqec` backend is preferred and used automatically when available. If you need the Haskell `gridsynth`, install it via `cabal install gridsynth` and ensure the cabal bin directory is on your `PATH`.
+The `gridsynth` Haskell binary enables the Python-fallback Gridsynth path; the C++ `nwqec` backend is preferred and used automatically when available. If you need the Haskell `gridsynth`, install it via `cabal install newsynth` (the executable is named `gridsynth` but lives in the `newsynth` package on Hackage) and ensure the cabal bin directory is on your `PATH`.
 
 **`nwqec` install fails**
 
