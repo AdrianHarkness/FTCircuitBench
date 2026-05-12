@@ -13,16 +13,13 @@ import itertools
 from collections import Counter
 
 import pytest
-
-from ftcircuitbench.pbc_converter.tab_gate import TableauPauliBasis
-
 from _pbc_helpers import (
     collect_paulis_with_signs,
     make_tableau,
     paulis_in_layer,
-    paulis_with_signs_in_layer,
-    pauli_string_to_row,
 )
+
+from ftcircuitbench.pbc_converter.tab_gate import TableauPauliBasis
 
 LAYER_METHODS = ["bare", "v2"]
 
@@ -181,7 +178,12 @@ def test_v2_bounded_creates_at_least_as_many_layers_as_unbounded() -> None:
     """
     # Construct a sequence where unbounded v2 can collapse rotations into earlier
     # layers but v2 with max_layer_checks=1 cannot.
-    paulis = ["ZII", "IZI", "XII", "IZI"]  # XII anti-commutes with ZII; IZI commutes with both
+    paulis = [
+        "ZII",
+        "IZI",
+        "XII",
+        "IZI",
+    ]  # XII anti-commutes with ZII; IZI commutes with both
     tab_unbounded = make_tableau(paulis)
     tab_bounded = make_tableau(paulis)
     layers_unbounded = tab_unbounded.layer_v2()

@@ -37,7 +37,14 @@ PAULI_ROWS = {
 }
 PAULI_MATRICES = {"I": I_MAT, "X": X_MAT, "Y": Y_MAT, "Z": Z_MAT}
 
-GATE_MATRICES = {"sdg": SDG_MAT, "x": X_MAT, "y": Y_MAT, "z": Z_MAT, "s": S_MAT, "h": H_MAT}
+GATE_MATRICES = {
+    "sdg": SDG_MAT,
+    "x": X_MAT,
+    "y": Y_MAT,
+    "z": Z_MAT,
+    "s": S_MAT,
+    "h": H_MAT,
+}
 
 
 def _row_to_matrix(row: np.ndarray) -> np.ndarray:
@@ -65,26 +72,26 @@ def _make_one_qubit_tab(row: np.ndarray) -> TableauForGate:
 EXPECTED = {
     "sdg": {
         "I": (False, False, False),
-        "X": (True, True, True),     # Sdg X Sdg^dag = -Y
-        "Y": (True, False, False),   # Sdg Y Sdg^dag = X
-        "Z": (False, True, False),   # Sdg Z Sdg^dag = Z
+        "X": (True, True, True),  # Sdg X Sdg^dag = -Y
+        "Y": (True, False, False),  # Sdg Y Sdg^dag = X
+        "Z": (False, True, False),  # Sdg Z Sdg^dag = Z
     },
     "x": {
         "I": (False, False, False),
         "X": (True, False, False),
-        "Y": (True, True, True),     # X Y X = -Y
-        "Z": (False, True, True),    # X Z X = -Z
+        "Y": (True, True, True),  # X Y X = -Y
+        "Z": (False, True, True),  # X Z X = -Z
     },
     "y": {
         "I": (False, False, False),
-        "X": (True, False, True),    # Y X Y = -X
+        "X": (True, False, True),  # Y X Y = -X
         "Y": (True, True, False),
-        "Z": (False, True, True),    # Y Z Y = -Z
+        "Z": (False, True, True),  # Y Z Y = -Z
     },
     "z": {
         "I": (False, False, False),
-        "X": (True, False, True),    # Z X Z = -X
-        "Y": (True, True, True),     # Z Y Z = -Y
+        "X": (True, False, True),  # Z X Z = -X
+        "Y": (True, True, True),  # Z Y Z = -Y
         "Z": (False, True, False),
     },
 }
@@ -96,9 +103,9 @@ def test_layer1_conjugation_table(gate: str, pauli: str) -> None:
     tab = _make_one_qubit_tab(PAULI_ROWS[pauli])
     tab.apply_gate(gate, [0])
     got = (bool(tab.tableau[0, 0]), bool(tab.tableau[0, 1]), bool(tab.tableau[0, 2]))
-    assert got == EXPECTED[gate][pauli], (
-        f"{gate} on {pauli}: got {got}, expected {EXPECTED[gate][pauli]}"
-    )
+    assert (
+        got == EXPECTED[gate][pauli]
+    ), f"{gate} on {pauli}: got {got}, expected {EXPECTED[gate][pauli]}"
 
 
 # ---------------------------------------------------------------------------
@@ -111,9 +118,9 @@ def _all_pauli_rows_one_qubit() -> np.ndarray:
     return np.array(
         [
             [False, False, False],  # I
-            [True, False, False],   # X
-            [False, True, False],   # Z
-            [True, True, False],    # Y
+            [True, False, False],  # X
+            [False, True, False],  # Z
+            [True, True, False],  # Y
         ]
     )
 
@@ -201,9 +208,9 @@ def test_layer3_matches_explicit_conjugation(gate: str, pauli: str) -> None:
     tab = _make_one_qubit_tab(PAULI_ROWS[pauli])
     tab.apply_gate(gate, [0])
     got = _row_to_matrix(tab.tableau[0])
-    assert _matrices_equal(got, expected), (
-        f"{gate} {pauli}: tableau row -> {got}, expected {expected}"
-    )
+    assert _matrices_equal(
+        got, expected
+    ), f"{gate} {pauli}: tableau row -> {got}, expected {expected}"
 
 
 # ---------------------------------------------------------------------------

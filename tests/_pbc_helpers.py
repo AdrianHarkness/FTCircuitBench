@@ -38,8 +38,14 @@ def row_to_pauli_string(row: np.ndarray, qubits: int) -> str:
     for i in range(qubits):
         x = bool(row[i])
         z = bool(row[qubits + i])
-        out.append({(False, False): "I", (True, False): "X",
-                    (False, True): "Z", (True, True): "Y"}[(x, z)])
+        out.append(
+            {
+                (False, False): "I",
+                (True, False): "X",
+                (False, True): "Z",
+                (True, True): "Y",
+            }[(x, z)]
+        )
     return "".join(out)
 
 
@@ -48,7 +54,9 @@ def row_sign(row: np.ndarray) -> bool:
     return bool(row[-1])
 
 
-def make_tableau(paulis: list[str], signs: list[bool] | None = None) -> TableauPauliBasis:
+def make_tableau(
+    paulis: list[str], signs: list[bool] | None = None
+) -> TableauPauliBasis:
     """Build a TableauPauliBasis from a list of Pauli strings of equal length."""
     if signs is None:
         signs = [False] * len(paulis)
@@ -58,15 +66,21 @@ def make_tableau(paulis: list[str], signs: list[bool] | None = None) -> TableauP
 
 def paulis_in_layer(layer: TableauPauliBasis) -> list[str]:
     """Return Pauli strings (no sign) for every row in a layer."""
-    return [row_to_pauli_string(layer.tableau[i], layer.qubits)
-            for i in range(layer.stab_counts)]
+    return [
+        row_to_pauli_string(layer.tableau[i], layer.qubits)
+        for i in range(layer.stab_counts)
+    ]
 
 
 def paulis_with_signs_in_layer(layer: TableauPauliBasis) -> list[tuple[str, bool]]:
     """Return (pauli_string, sign) tuples for every row in a layer."""
-    return [(row_to_pauli_string(layer.tableau[i], layer.qubits),
-             row_sign(layer.tableau[i]))
-            for i in range(layer.stab_counts)]
+    return [
+        (
+            row_to_pauli_string(layer.tableau[i], layer.qubits),
+            row_sign(layer.tableau[i]),
+        )
+        for i in range(layer.stab_counts)
+    ]
 
 
 def collect_paulis(layers: list[TableauPauliBasis]) -> list[str]:
@@ -77,7 +91,9 @@ def collect_paulis(layers: list[TableauPauliBasis]) -> list[str]:
     return out
 
 
-def collect_paulis_with_signs(layers: list[TableauPauliBasis]) -> list[tuple[str, bool]]:
+def collect_paulis_with_signs(
+    layers: list[TableauPauliBasis],
+) -> list[tuple[str, bool]]:
     """Flatten all (Pauli, sign) pairs across layers into one list."""
     out: list[tuple[str, bool]] = []
     for layer in layers:

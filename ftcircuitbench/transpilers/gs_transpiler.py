@@ -48,12 +48,20 @@ def transpile_to_gridsynth_clifford_t(
     (or the input itself when the early-return fires).
     """
     initial_circuit = prepare_input(
-        circuit_input, is_file=is_file, remove_final_measurements=remove_final_measurements
+        circuit_input,
+        is_file=is_file,
+        remove_final_measurements=remove_final_measurements,
     )
 
     if is_clifford_t_basis(initial_circuit):
-        print("      Circuit is already in Clifford+T basis. Skipping RZ transpilation.")
-        return (initial_circuit, initial_circuit) if return_intermediate else initial_circuit
+        print(
+            "      Circuit is already in Clifford+T basis. Skipping RZ transpilation."
+        )
+        return (
+            (initial_circuit, initial_circuit)
+            if return_intermediate
+            else initial_circuit
+        )
 
     intermediate_circuit = to_intermediate_rz(initial_circuit)
 
@@ -81,7 +89,11 @@ def transpile_to_gridsynth_clifford_t(
         intermediate_circuit.metadata["gridsynth_precision"] = gridsynth_precision
 
     clifford_t_from_gs = enforce_pbc_basis(clifford_t_from_gs)
-    return (intermediate_circuit, clifford_t_from_gs) if return_intermediate else clifford_t_from_gs
+    return (
+        (intermediate_circuit, clifford_t_from_gs)
+        if return_intermediate
+        else clifford_t_from_gs
+    )
 
 
 __all__ = [

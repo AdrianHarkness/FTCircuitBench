@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from _pbc_helpers import make_tableau, pauli_string_to_row
 
 from ftcircuitbench.pbc_converter.tab_gate import TableauPauliBasis
-
-from _pbc_helpers import make_tableau, pauli_string_to_row
 
 
 def _commute(layer: TableauPauliBasis, target_row) -> bool:
@@ -50,16 +49,16 @@ def test_single_qubit_pairs(a: str, b: str, expected: bool) -> None:
 @pytest.mark.parametrize(
     "a,b,expected",
     [
-        ("XX", "ZZ", True),   # even overlap of anti-commuting pairs
+        ("XX", "ZZ", True),  # even overlap of anti-commuting pairs
         ("XX", "ZI", False),  # odd overlap
         ("XX", "IZ", False),  # odd overlap
-        ("XY", "YX", True),   # q0 anti, q1 anti → commute
+        ("XY", "YX", True),  # q0 anti, q1 anti → commute
         ("XZ", "ZX", True),
-        ("XI", "IX", True),   # disjoint support
+        ("XI", "IX", True),  # disjoint support
         ("XI", "ZI", False),  # same qubit, anti
-        ("YY", "XX", True),   # both pairs anti, count even
+        ("YY", "XX", True),  # both pairs anti, count even
         ("YY", "XI", False),  # one pair anti
-        ("YZ", "XY", True),   # q0 YX anti, q1 ZY anti → commute
+        ("YZ", "XY", True),  # q0 YX anti, q1 ZY anti → commute
     ],
 )
 def test_two_qubit_pairs(a: str, b: str, expected: bool) -> None:
@@ -72,11 +71,11 @@ def test_two_qubit_pairs(a: str, b: str, expected: bool) -> None:
 @pytest.mark.parametrize(
     "a,b,expected",
     [
-        ("XYZ", "ZYX", True),   # q0 anti, q1 commute, q2 anti → commute
-        ("XYZ", "ZIX", True),   # q0 anti, q1 commute, q2 anti → commute
+        ("XYZ", "ZYX", True),  # q0 anti, q1 commute, q2 anti → commute
+        ("XYZ", "ZIX", True),  # q0 anti, q1 commute, q2 anti → commute
         ("XXX", "YYY", False),  # 3 anti → anti-commute
         ("XII", "ZII", False),
-        ("XYZ", "XYZ", True),   # identical
+        ("XYZ", "XYZ", True),  # identical
     ],
 )
 def test_three_qubit_pairs(a: str, b: str, expected: bool) -> None:

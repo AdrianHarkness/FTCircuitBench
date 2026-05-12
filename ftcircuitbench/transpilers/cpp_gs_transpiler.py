@@ -17,6 +17,8 @@ from ftcircuitbench.transpilers.gs_transpiler import (
 )
 from ftcircuitbench.transpilers.nwqec_ct import (
     is_nwqec_available,
+)
+from ftcircuitbench.transpilers.nwqec_ct import (
     transpile_to_clifford_t_cpp as nwqec_transpile_to_clifford_t,
 )
 

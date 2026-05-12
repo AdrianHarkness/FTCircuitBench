@@ -75,12 +75,20 @@ def transpile_to_clifford_t_cpp(
         )
 
     initial_circuit = prepare_input(
-        circuit_input, is_file=is_file, remove_final_measurements=remove_final_measurements
+        circuit_input,
+        is_file=is_file,
+        remove_final_measurements=remove_final_measurements,
     )
 
     if is_clifford_t_basis(initial_circuit):
-        print("      Circuit is already in Clifford+T basis. Skipping RZ transpilation.")
-        return (initial_circuit, initial_circuit) if return_intermediate else initial_circuit
+        print(
+            "      Circuit is already in Clifford+T basis. Skipping RZ transpilation."
+        )
+        return (
+            (initial_circuit, initial_circuit)
+            if return_intermediate
+            else initial_circuit
+        )
 
     intermediate_circuit = to_intermediate_rz(initial_circuit)
 
@@ -88,9 +96,7 @@ def transpile_to_clifford_t_cpp(
     nwqec_input = _strip_non_semantic(intermediate_circuit)
     tmp_path = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".qasm", delete=False
-        ) as tmp:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".qasm", delete=False) as tmp:
             tmp.write(qasm2_dumps(nwqec_input))
             tmp_path = tmp.name
         circ = nq.load_qasm(tmp_path)

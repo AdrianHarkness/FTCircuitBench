@@ -14,13 +14,12 @@ from __future__ import annotations
 from collections import Counter
 
 import pytest
+from _pbc_helpers import collect_paulis_with_signs
 from qiskit import QuantumCircuit
 
 from ftcircuitbench.fidelity import calculate_circuit_fidelity
 from ftcircuitbench.pbc_converter.pbc_generator import convert_to_pbc_circuit
 from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
-
-from _pbc_helpers import collect_paulis_with_signs
 
 LAYER_METHODS = ["bare", "v2", "singleton"]
 
@@ -42,8 +41,10 @@ def _multiset_of_rotations(rpc) -> Counter:
 
 
 def test_all_methods_preserve_rotation_multiset(small_clifford_t_circuit) -> None:
-    multisets = {m: _multiset_of_rotations(_layer_with(small_clifford_t_circuit, m))
-                 for m in LAYER_METHODS}
+    multisets = {
+        m: _multiset_of_rotations(_layer_with(small_clifford_t_circuit, m))
+        for m in LAYER_METHODS
+    }
     reference = multisets["bare"]
     for m, ms in multisets.items():
         assert ms == reference, (
@@ -52,9 +53,13 @@ def test_all_methods_preserve_rotation_multiset(small_clifford_t_circuit) -> Non
         )
 
 
-def test_all_methods_preserve_rotation_multiset_random(random_clifford_t_circuit) -> None:
-    multisets = {m: _multiset_of_rotations(_layer_with(random_clifford_t_circuit, m))
-                 for m in LAYER_METHODS}
+def test_all_methods_preserve_rotation_multiset_random(
+    random_clifford_t_circuit,
+) -> None:
+    multisets = {
+        m: _multiset_of_rotations(_layer_with(random_clifford_t_circuit, m))
+        for m in LAYER_METHODS
+    }
     reference = multisets["bare"]
     for m, ms in multisets.items():
         assert ms == reference, f"method={m} drifted from bare"
@@ -66,7 +71,9 @@ def test_all_methods_preserve_rotation_multiset_random(random_clifford_t_circuit
 @pytest.mark.parametrize("method", LAYER_METHODS)
 def test_rotation_count_equals_t_count(small_clifford_t_circuit, method) -> None:
     rpc = _layer_with(small_clifford_t_circuit, method)
-    expected = small_clifford_t_circuit.count_ops().get("t", 0) + small_clifford_t_circuit.count_ops().get("tdg", 0)
+    expected = small_clifford_t_circuit.count_ops().get(
+        "t", 0
+    ) + small_clifford_t_circuit.count_ops().get("tdg", 0)
     total = sum(layer.stab_counts for layer in rpc.t_layers)
     assert total == expected
 
@@ -99,7 +106,9 @@ def test_pipeline_fidelity_independent_of_layering_method(method) -> None:
         use_nwqec=False,
     )
     # The PBC stats must include rotation count for downstream consumers.
-    assert "pre_opt_rotation_operators" in stats or "rotation_operators" in stats or stats
+    assert (
+        "pre_opt_rotation_operators" in stats or "rotation_operators" in stats or stats
+    )
 
     # Fidelity is between original and Clifford+T (or PBC representation reused as both),
     # but here we use the unitary path: copy serves as a stand-in for an exact equivalent.
@@ -125,8 +134,9 @@ def test_pipeline_total_rotations_equal_across_methods() -> None:
             use_nwqec=False,
         )
         # Use the pre-optimisation rotation count exposed by the analyzer
-        counts[method] = stats.get("pre_opt_rotation_operators",
-                                   stats.get("rotation_operators"))
+        counts[method] = stats.get(
+            "pre_opt_rotation_operators", stats.get("rotation_operators")
+        )
     reference = counts["bare"]
     assert reference is not None
     for m, c in counts.items():

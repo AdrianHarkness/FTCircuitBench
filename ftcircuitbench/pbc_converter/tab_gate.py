@@ -458,9 +458,7 @@ class TableauForGate:
 
     def x(self, index):
         # X anticommutes with Z; flips phase where Z_i = 1.
-        self.tableau[:, -1] = (
-            self.tableau[:, -1] ^ self.tableau[:, self.qubits + index]
-        )
+        self.tableau[:, -1] = self.tableau[:, -1] ^ self.tableau[:, self.qubits + index]
         return
 
     def y(self, index):
@@ -799,7 +797,7 @@ class TableauPauliBasis(TableauForGate):
         x_part = self.tableau[:, :n]
         z_part = self.tableau[:, n : 2 * n]
         support_bool = x_part | z_part  # (N, n)
-        powers = (1 << np.arange(n, dtype=np.int64))
+        powers = 1 << np.arange(n, dtype=np.int64)
         row_support_masks = (support_bool.astype(np.int64) * powers).sum(axis=1)
         # Convert to Python ints so OR'ing across rows uses arbitrary-precision
         # arithmetic (n can exceed 63 in principle).

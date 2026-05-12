@@ -45,11 +45,13 @@ def random_clifford_t_circuit() -> QuantumCircuit:
 @pytest.fixture
 def make_rpc():
     """Factory: returns a processed RotationPauliCirc for a circuit."""
+
     def _make(qc: QuantumCircuit) -> RotationPauliCirc:
         rpc = RotationPauliCirc(qc)
         err = rpc.process(ifprint=False)
         assert err is False
         return rpc
+
     return _make
 
 

@@ -17,7 +17,6 @@ from qiskit.transpiler.passes.synthesis import SolovayKitaev
 
 from ._basis import (
     INTERMEDIATE_RZ_BASIS,
-    PBC_COMPATIBLE_CLIFFORD_T_BASIS,
     enforce_pbc_basis,
     is_clifford_t_basis,
     prepare_input,
@@ -48,8 +47,14 @@ def transpile_to_solovay_kitaev_clifford_t(
     )
 
     if is_clifford_t_basis(processed_circuit):
-        print("      Circuit is already in Clifford+T basis. Skipping SK transpilation.")
-        return (processed_circuit, processed_circuit) if return_intermediate else processed_circuit
+        print(
+            "      Circuit is already in Clifford+T basis. Skipping SK transpilation."
+        )
+        return (
+            (processed_circuit, processed_circuit)
+            if return_intermediate
+            else processed_circuit
+        )
 
     print("Transpiling to intermediate RZ basis...")
     rz_circuit = to_intermediate_rz(processed_circuit)
@@ -93,7 +98,11 @@ def transpile_to_solovay_kitaev_clifford_t(
         discretized_circuit = rz_circuit
 
     discretized_circuit = enforce_pbc_basis(discretized_circuit)
-    return (rz_circuit, discretized_circuit) if return_intermediate else discretized_circuit
+    return (
+        (rz_circuit, discretized_circuit)
+        if return_intermediate
+        else discretized_circuit
+    )
 
 
 def transpile_qasm_file_to_sk(

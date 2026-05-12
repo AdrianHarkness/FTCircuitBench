@@ -14,11 +14,9 @@ message.
 from __future__ import annotations
 
 import pytest
-
-from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
-
 from _pbc_helpers import paulis_with_signs_in_layer
 
+from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
 
 # ---------- Snapshot constants captured 2026-05-08 ----------
 # Source circuits live in conftest.py:
@@ -46,9 +44,17 @@ RANDOM_V2_SIZES = [9, 2]
 RANDOM_SINGLETON_SIZES = [1] * 11
 
 RANDOM_V2_PAULIS = [
-    [("IZII", True), ("ZIII", True), ("ZIII", True), ("ZIII", True),
-     ("ZIZZ", True), ("ZIZZ", False), ("IIIZ", True), ("ZIZZ", True),
-     ("ZIZZ", True)],
+    [
+        ("IZII", True),
+        ("ZIII", True),
+        ("ZIII", True),
+        ("ZIII", True),
+        ("ZIZZ", True),
+        ("ZIZZ", False),
+        ("IIIZ", True),
+        ("ZIZZ", True),
+        ("ZIZZ", True),
+    ],
     [("XIXZ", False), ("XIXZ", False)],
 ]
 
@@ -76,7 +82,9 @@ def _layer(rpc_circuit, method: str):
         ("singleton", SMALL_LAYERS_SINGLETON),
     ],
 )
-def test_small_circuit_layer_snapshot(small_clifford_t_circuit, method, expected) -> None:
+def test_small_circuit_layer_snapshot(
+    small_clifford_t_circuit, method, expected
+) -> None:
     rpc = _layer(small_clifford_t_circuit, method)
     actual = [paulis_with_signs_in_layer(layer) for layer in rpc.t_layers]
     assert actual == expected
@@ -93,7 +101,9 @@ def test_small_circuit_layer_snapshot(small_clifford_t_circuit, method, expected
         ("singleton", RANDOM_SINGLETON_SIZES),
     ],
 )
-def test_random_circuit_layer_sizes(random_clifford_t_circuit, method, expected_sizes) -> None:
+def test_random_circuit_layer_sizes(
+    random_clifford_t_circuit, method, expected_sizes
+) -> None:
     rpc = _layer(random_clifford_t_circuit, method)
     actual = [layer.stab_counts for layer in rpc.t_layers]
     assert actual == expected_sizes
@@ -121,7 +131,9 @@ def test_random_circuit_v2_full_pauli_snapshot(random_clifford_t_circuit) -> Non
         ("v2", OPTIMIZE_T_TRACE_V2),
     ],
 )
-def test_optimize_t_convergence_trace(random_clifford_t_circuit, method, expected_trace) -> None:
+def test_optimize_t_convergence_trace(
+    random_clifford_t_circuit, method, expected_trace
+) -> None:
     """`optimize_t` returns the gate-count trajectory across iterations.
 
     Locking the trace catches both correctness regressions (wrong final count)

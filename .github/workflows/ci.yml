@@ -18,7 +18,7 @@ jobs:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
       - name: Sync deps
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
       - name: Sync deps
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
       - name: Sync deps

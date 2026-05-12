@@ -21,10 +21,27 @@ from qiskit import QuantumCircuit, transpile
 from ftcircuitbench.parser import load_qasm_circuit
 
 INTERMEDIATE_RZ_BASIS: Tuple[str, ...] = (
-    "cx", "h", "s", "sdg", "t", "tdg", "x", "y", "z", "rz",
+    "cx",
+    "h",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "x",
+    "y",
+    "z",
+    "rz",
 )
 PBC_COMPATIBLE_CLIFFORD_T_BASIS: Tuple[str, ...] = (
-    "cx", "h", "s", "sdg", "t", "tdg", "x", "y", "z",
+    "cx",
+    "h",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "x",
+    "y",
+    "z",
 )
 
 

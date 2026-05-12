@@ -29,9 +29,10 @@ from ftcircuitbench.transpilers.nwqec_ct import (
 )
 from ftcircuitbench.transpilers.sk_transpiler import (
     INTERMEDIATE_RZ_BASIS as SK_INTERMEDIATE,
+)
+from ftcircuitbench.transpilers.sk_transpiler import (
     transpile_to_solovay_kitaev_clifford_t,
 )
-
 
 # ---------------------------------------------------------------------------
 # Test inputs (kept small + RZ-bearing to exercise the synthesis step)
@@ -78,13 +79,30 @@ _INPUT_FACTORIES = [_rz_circuit_simple, _rz_circuit_multi]
 
 def test_canonical_intermediate_basis_set() -> None:
     assert set(INTERMEDIATE_RZ_BASIS) == {
-        "cx", "h", "s", "sdg", "t", "tdg", "x", "y", "z", "rz",
+        "cx",
+        "h",
+        "s",
+        "sdg",
+        "t",
+        "tdg",
+        "x",
+        "y",
+        "z",
+        "rz",
     }
 
 
 def test_canonical_pbc_basis_set() -> None:
     assert set(PBC_COMPATIBLE_CLIFFORD_T_BASIS) == {
-        "cx", "h", "s", "sdg", "t", "tdg", "x", "y", "z",
+        "cx",
+        "h",
+        "s",
+        "sdg",
+        "t",
+        "tdg",
+        "x",
+        "y",
+        "z",
     }
 
 
@@ -151,7 +169,10 @@ def test_intermediates_match_across_pipelines(factory) -> None:
 
     if is_nwqec_available():
         inter_nw, _ = transpile_to_clifford_t_cpp(
-            factory(), epsilon=1e-3, return_intermediate=True, forbid_python_fallback=True
+            factory(),
+            epsilon=1e-3,
+            return_intermediate=True,
+            forbid_python_fallback=True,
         )
         assert dict(inter_gs.count_ops()) == dict(inter_nw.count_ops())
 
@@ -187,7 +208,9 @@ def test_final_in_pbc_basis_nwqec(factory) -> None:
     pytest.importorskip("nwqec")
     if not is_nwqec_available():
         pytest.skip("nwqec not available")
-    out = transpile_to_clifford_t_cpp(factory(), epsilon=1e-3, forbid_python_fallback=True)
+    out = transpile_to_clifford_t_cpp(
+        factory(), epsilon=1e-3, forbid_python_fallback=True
+    )
     assert is_clifford_t_basis(out)
 
 
@@ -293,7 +316,9 @@ def test_nwqec_final_approximates_input() -> None:
     if not is_nwqec_available():
         pytest.skip("nwqec not available")
     qc = _rz_circuit_simple()
-    out = transpile_to_clifford_t_cpp(qc.copy(), epsilon=1e-3, forbid_python_fallback=True)
+    out = transpile_to_clifford_t_cpp(
+        qc.copy(), epsilon=1e-3, forbid_python_fallback=True
+    )
     err = _approximation_error(qc, out)
     assert err < 5e-2, err
 
@@ -377,14 +402,14 @@ def test_nwqec_behavioral_parity_final_output() -> None:
         counts = out.count_ops()
         for gate, want in exactly_preserved.items():
             got = counts.get(gate, 0)
-            assert got == want, (
-                f"{label}: {gate} count = {got}, want {want}; full {dict(counts)}"
-            )
+            assert (
+                got == want
+            ), f"{label}: {gate} count = {got}, want {want}; full {dict(counts)}"
         for gate, lower in at_least_preserved.items():
             got = counts.get(gate, 0)
-            assert got >= lower, (
-                f"{label}: {gate} count = {got}, want >= {lower}; full {dict(counts)}"
-            )
+            assert (
+                got >= lower
+            ), f"{label}: {gate} count = {got}, want >= {lower}; full {dict(counts)}"
 
     if is_nwqec_available():
         out_nw = transpile_to_clifford_t_cpp(
@@ -393,14 +418,14 @@ def test_nwqec_behavioral_parity_final_output() -> None:
         counts = out_nw.count_ops()
         for gate, want in exactly_preserved.items():
             got = counts.get(gate, 0)
-            assert got == want, (
-                f"nwqec: {gate} count = {got}, want {want}; full {dict(counts)}"
-            )
+            assert (
+                got == want
+            ), f"nwqec: {gate} count = {got}, want {want}; full {dict(counts)}"
         for gate, lower in at_least_preserved.items():
             got = counts.get(gate, 0)
-            assert got >= lower, (
-                f"nwqec: {gate} count = {got}, want >= {lower}; full {dict(counts)}"
-            )
+            assert (
+                got >= lower
+            ), f"nwqec: {gate} count = {got}, want >= {lower}; full {dict(counts)}"
 
 
 # ---------------------------------------------------------------------------
@@ -429,7 +454,9 @@ def test_single_t_input_not_reapproximated_nwqec() -> None:
         pytest.skip("nwqec not available")
     qc = QuantumCircuit(1)
     qc.t(0)
-    out = transpile_to_clifford_t_cpp(qc.copy(), epsilon=1e-3, forbid_python_fallback=True)
+    out = transpile_to_clifford_t_cpp(
+        qc.copy(), epsilon=1e-3, forbid_python_fallback=True
+    )
     assert dict(out.count_ops()) == {"t": 1}
 
 
@@ -441,6 +468,7 @@ def test_single_t_input_not_reapproximated_nwqec() -> None:
 
 def test_pbc_converter_accepts_final_output_gs() -> None:
     from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
+
     qc = _broad_basis_circuit()
     out = transpile_to_gridsynth_clifford_t(qc.copy(), gridsynth_precision=3)
     rpc = RotationPauliCirc(out)
@@ -449,6 +477,7 @@ def test_pbc_converter_accepts_final_output_gs() -> None:
 
 def test_pbc_converter_accepts_final_output_sk() -> None:
     from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
+
     qc = _broad_basis_circuit()
     out = transpile_to_solovay_kitaev_clifford_t(qc.copy(), recursion_degree=1)
     rpc = RotationPauliCirc(out)
@@ -460,8 +489,11 @@ def test_pbc_converter_accepts_final_output_nwqec() -> None:
     if not is_nwqec_available():
         pytest.skip("nwqec not available")
     from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
+
     qc = _broad_basis_circuit()
-    out = transpile_to_clifford_t_cpp(qc.copy(), epsilon=1e-3, forbid_python_fallback=True)
+    out = transpile_to_clifford_t_cpp(
+        qc.copy(), epsilon=1e-3, forbid_python_fallback=True
+    )
     rpc = RotationPauliCirc(out)
     assert rpc.process(ifprint=False) is False
 
@@ -519,14 +551,22 @@ def test_pipelines_preserve_input_discrete_gates(qc: QuantumCircuit) -> None:
     for gate in exactly_preserved:
         want = counts_in.get(gate, 0)
         if want > 0:
-            assert counts_gs.get(gate, 0) == want, f"GS dropped {gate}: {dict(counts_gs)}"
-            assert counts_nw.get(gate, 0) == want, f"NW dropped {gate}: {dict(counts_nw)}"
+            assert (
+                counts_gs.get(gate, 0) == want
+            ), f"GS dropped {gate}: {dict(counts_gs)}"
+            assert (
+                counts_nw.get(gate, 0) == want
+            ), f"NW dropped {gate}: {dict(counts_nw)}"
 
     for gate in at_least_preserved:
         want = counts_in.get(gate, 0)
         if want > 0:
-            assert counts_gs.get(gate, 0) >= want, f"GS dropped {gate}: {dict(counts_gs)}"
-            assert counts_nw.get(gate, 0) >= want, f"NW dropped {gate}: {dict(counts_nw)}"
+            assert (
+                counts_gs.get(gate, 0) >= want
+            ), f"GS dropped {gate}: {dict(counts_gs)}"
+            assert (
+                counts_nw.get(gate, 0) >= want
+            ), f"NW dropped {gate}: {dict(counts_nw)}"
 
 
 @pytest.mark.parametrize("qc", _reference_inputs())
@@ -563,7 +603,9 @@ def test_sk_python_unitary_close_to_nwqec(qc: QuantumCircuit) -> None:
     fid_nw = process_fidelity(Operator(qc), Operator(out_nw))
     fid_sk = process_fidelity(Operator(qc), Operator(out_sk))
     assert fid_nw > 0.999, f"NWQEC reference fidelity {fid_nw:.6f} below tolerance"
-    assert fid_sk > 0.5, f"SK fidelity {fid_sk:.6f} too low (recursion_degree=3 was expected to give >= 0.5)"
+    assert (
+        fid_sk > 0.5
+    ), f"SK fidelity {fid_sk:.6f} too low (recursion_degree=3 was expected to give >= 0.5)"
 
 
 @pytest.mark.parametrize("qc", _reference_inputs())
@@ -571,9 +613,7 @@ def test_all_three_pipelines_pbc_compatible(qc: QuantumCircuit) -> None:
     """The end-to-end goal: each pipeline's output must feed into PBC successfully."""
     from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
 
-    out_gs = transpile_to_gridsynth_clifford_t(
-        qc.copy(), gridsynth_precision=3
-    )
+    out_gs = transpile_to_gridsynth_clifford_t(qc.copy(), gridsynth_precision=3)
     out_sk = transpile_to_solovay_kitaev_clifford_t(qc.copy(), recursion_degree=2)
 
     assert RotationPauliCirc(out_gs).process(ifprint=False) is False

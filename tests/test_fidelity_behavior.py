@@ -172,9 +172,7 @@ def test_rz_product_fidelity_multiprocessing_fallback(monkeypatch) -> None:
 
 
 def test_overall_fidelity_equals_product_of_individuals(monkeypatch) -> None:
-    monkeypatch.setattr(
-        fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H"
-    )
+    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H")
     qc = QuantumCircuit(1)
     qc.rz(0.4, 0)
     qc.rz(0.7, 0)
@@ -233,9 +231,7 @@ def _install_inprocess_pool(monkeypatch):
 
 
 def test_mp_and_sequential_produce_same_individual_fidelities(monkeypatch) -> None:
-    monkeypatch.setattr(
-        fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H"
-    )
+    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H")
     _install_inprocess_pool(monkeypatch)
     qc = QuantumCircuit(1)
     qc.rz(0.3, 0)
@@ -257,9 +253,7 @@ def test_mp_and_sequential_produce_same_individual_fidelities(monkeypatch) -> No
 
 
 def test_failed_decompositions_counted_in_multiprocessing_path(monkeypatch) -> None:
-    monkeypatch.setattr(
-        fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H"
-    )
+    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H")
     _install_inprocess_pool(monkeypatch)
     qc = QuantumCircuit(1)
     qc.rz(0.4, 0)
@@ -271,9 +265,7 @@ def test_failed_decompositions_counted_in_multiprocessing_path(monkeypatch) -> N
 
 
 def test_failed_decompositions_counted_in_sequential_path(monkeypatch) -> None:
-    monkeypatch.setattr(
-        fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H"
-    )
+    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H")
     qc = QuantumCircuit(1)
     qc.rz(0.4, 0)
     qc.rz(0.6, 0)
@@ -293,9 +285,7 @@ def test_sk_failed_decompositions_counted(monkeypatch) -> None:
     qc = QuantumCircuit(1)
     qc.rz(0.4, 0)
     qc.rz(0.6, 0)
-    result = rz_product_fidelity_sk(
-        qc, recursion_degree=1, use_multiprocessing=False
-    )
+    result = rz_product_fidelity_sk(qc, recursion_degree=1, use_multiprocessing=False)
     assert result["failed_decompositions"] == 2
     assert result["status"] == "partial_failure"
 
@@ -376,9 +366,7 @@ def test_sk_basic_approximations_cached_across_calls(monkeypatch) -> None:
 
 
 def test_decomposer_returns_decomp_map(monkeypatch) -> None:
-    monkeypatch.setattr(
-        decomposer_mod, "_run_gridsynth_cli", lambda *_a, **_k: "T"
-    )
+    monkeypatch.setattr(decomposer_mod, "_run_gridsynth_cli", lambda *_a, **_k: "T")
     qc = QuantumCircuit(1)
     qc.rz(0.4, 0)
     qc.rz(0.6, 0)
@@ -448,9 +436,7 @@ def test_rz_product_fidelity_reads_metadata_decomp_map(monkeypatch) -> None:
     qc.rz(0.6, 0)
     qc.metadata = {"gridsynth_decomp": {"0.4": "", "0.6": ""}}
 
-    result = rz_product_fidelity(
-        qc, gridsynth_precision=3, use_multiprocessing=False
-    )
+    result = rz_product_fidelity(qc, gridsynth_precision=3, use_multiprocessing=False)
     assert cli_calls["n"] == 0
     assert result["individual_fidelities"] == [1.0, 1.0]
 
@@ -505,25 +491,19 @@ def test_closed_form_fidelity_matches_process_fidelity(
     ideal_op = Operator(ideal)
 
     approx_qc = (
-        create_circuit_from_gate_string(approx_seq)
-        if approx_seq
-        else QuantumCircuit(1)
+        create_circuit_from_gate_string(approx_seq) if approx_seq else QuantumCircuit(1)
     )
     approx_op = Operator(approx_qc)
 
     expected = float(
-        process_fidelity(
-            approx_op, ideal_op, require_cp=False, require_tp=False
-        )
+        process_fidelity(approx_op, ideal_op, require_cp=False, require_tp=False)
     )
     actual = fidelity_mod._unitary_process_fidelity_1q(approx_op, ideal_op)
     assert actual == pytest.approx(expected, abs=1e-12)
 
 
 def test_rz_product_fidelity_explicit_arg_overrides_metadata(monkeypatch) -> None:
-    monkeypatch.setattr(
-        fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H"
-    )
+    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H")
     qc = QuantumCircuit(1)
     qc.rz(0.5, 0)
     # Metadata says identity (would give fid 1.0); explicit arg says "H" (low).
@@ -557,9 +537,7 @@ def test_rz_product_fidelity_dedupes_repeated_angles(monkeypatch) -> None:
         qc.rz(0.5, 0)
     qc.rz(0.7, 0)
 
-    result = rz_product_fidelity(
-        qc, gridsynth_precision=3, use_multiprocessing=False
-    )
+    result = rz_product_fidelity(qc, gridsynth_precision=3, use_multiprocessing=False)
     # 6 RZ gates but only 2 unique angles: gridsynth invoked twice.
     assert cli_calls == ["0.5", "0.7"]
     # Per-gate output preserves length and order.
@@ -582,16 +560,12 @@ def test_rz_product_fidelity_overall_accounts_for_repeated_angles(
 ) -> None:
     # Catches the regression where dedupe might collapse the product to
     # one factor per unique angle instead of one per gate occurrence.
-    monkeypatch.setattr(
-        fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H"
-    )
+    monkeypatch.setattr(fidelity_mod, "_run_gridsynth_cli", lambda *_a, **_k: "H")
     qc = QuantumCircuit(1)
     for _ in range(3):
         qc.rz(0.5, 0)
 
-    result = rz_product_fidelity(
-        qc, gridsynth_precision=3, use_multiprocessing=False
-    )
+    result = rz_product_fidelity(qc, gridsynth_precision=3, use_multiprocessing=False)
     per_gate = result["individual_fidelities"][0]
     assert result["overall_fidelity"] == pytest.approx(per_gate**3)
 
@@ -647,12 +621,8 @@ def test_sk_mp_and_sequential_produce_same_individual_fidelities(
     qc.rz(0.3, 0)
     qc.rz(0.6, 0)
 
-    seq = rz_product_fidelity_sk(
-        qc, recursion_degree=1, use_multiprocessing=False
-    )
-    mp = rz_product_fidelity_sk(
-        qc, recursion_degree=1, use_multiprocessing=True
-    )
+    seq = rz_product_fidelity_sk(qc, recursion_degree=1, use_multiprocessing=False)
+    mp = rz_product_fidelity_sk(qc, recursion_degree=1, use_multiprocessing=True)
     assert seq["individual_fidelities"] == pytest.approx(mp["individual_fidelities"])
     assert seq["overall_fidelity"] == pytest.approx(mp["overall_fidelity"])
     assert mp["multiprocessing_used"] is True
@@ -702,9 +672,7 @@ def test_rz_product_fidelity_sk_dedupes_repeated_angles(monkeypatch) -> None:
         qc.rz(0.5, 0)
     qc.rz(0.9, 0)
 
-    result = rz_product_fidelity_sk(
-        qc, recursion_degree=1, use_multiprocessing=False
-    )
+    result = rz_product_fidelity_sk(qc, recursion_degree=1, use_multiprocessing=False)
     # 5 RZ gates, 2 unique angles -> SK synthesis runs twice.
     assert sk_calls == [0.5, 0.9]
     assert len(result["individual_fidelities"]) == 5
@@ -755,9 +723,7 @@ def test_real_gridsynth_end_to_end() -> None:
         pytest.skip("gridsynth not installed")
     qc = QuantumCircuit(1)
     qc.rz(0.5, 0)
-    result = rz_product_fidelity(
-        qc, gridsynth_precision=5, use_multiprocessing=False
-    )
+    result = rz_product_fidelity(qc, gridsynth_precision=5, use_multiprocessing=False)
     assert result["rz_gate_count"] == 1
     assert isinstance(result["overall_fidelity"], float)
     # gridsynth at precision=5 should give a very good approximation
