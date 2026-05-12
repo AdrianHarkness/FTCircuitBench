@@ -12,6 +12,8 @@ os.environ["PATH"] = (
     os.path.expanduser("~/.cabal/bin") + ":" + os.environ.get("PATH", "")
 )
 
+from ftcircuitbench import load_qasm_circuit
+from ftcircuitbench.api import PipelineConfig, run_pipeline
 from ftcircuitbench.benchmark_utils import (
     combine_pbc_files_same_dir,
     find_all_qasm_files,
@@ -21,8 +23,6 @@ from ftcircuitbench.benchmark_utils import (
     get_stats_json_path,
     save_json,
 )
-from ftcircuitbench import load_qasm_circuit
-from ftcircuitbench.api import PipelineConfig, run_pipeline
 from ftcircuitbench.reports.summary_markdown import generate_summary_markdown
 
 # Default parameter sets
@@ -251,7 +251,7 @@ def main():
     )
     parser.add_argument(
         "--layering-method",
-        choices=["bare", "v2", "v3", "singleton"],
+        choices=["bare", "v2", "singleton"],
         default="v2",
         help="PBC layering method to use (default: v2)",
     )

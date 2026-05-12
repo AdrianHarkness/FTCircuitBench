@@ -7,8 +7,8 @@ name = "ftcircuitbench"
 version = "0.1.0"
 description = "A benchmark suite for fault-tolerant quantum circuit compilation and analysis"
 readme = "README.md"
-requires-python = ">=3.9"
-license = { text = "Apache-2.0" }
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
 
 authors = [
     { name = "Adrian Harkness" },
@@ -28,12 +28,12 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
@@ -55,9 +55,12 @@ dependencies = [
 dev = [
     "pytest>=8.4.0",
     "pytest-mock>=3.14.1",
+    "pytest-cov>=5.0.0",
     "ruff>=0.14.8",
     "black>=25.11.0",
     "isort>=6.1.0",
+    "pre-commit>=4.0.0",
+    "mypy>=1.13.0",
 ]
 
 [project.urls]
@@ -79,14 +82,52 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 
 [tool.ruff]
 line-length = 88
+target-version = "py310"
 extend-exclude = ["misc/*.ipynb"]
 
 [tool.black]
 line-length = 88
-target-version = ["py310"]
+target-version = ["py310", "py311", "py312"]
 
 [tool.isort]
 profile = "black"
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+strict_optional = true
+files = ["ftcircuitbench"]
+
+# Per-module overrides.
+#
+# pbc_circuit_reader and pbc_generator carry deep type issues (object-typed
+# returns from the parser, list[TableauPauliBasis] vs list[TableauForGate]
+# mismatches, and float/int unification in stab-count statistics) that require
+# an API/data-model review rather than spot fixes. Defer them here so the rest
+# of the typecheck job can be a CI gate.
+# TODO(typecheck-followup): triage pbc_converter modules in a follow-up.
+[[tool.mypy.overrides]]
+module = "ftcircuitbench.pbc_converter.pbc_circuit_reader"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ftcircuitbench.pbc_converter.pbc_generator"
+ignore_errors = true
+
+[tool.coverage.run]
+source = ["ftcircuitbench"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "raise NotImplementedError", "if TYPE_CHECKING:"]
+show_missing = true

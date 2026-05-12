@@ -3,6 +3,7 @@
 Generates Pauli Based Computation (PBC) circuits from Clifford+T circuits.
 This file contains the unified logic for PBC conversion using parallel RPC fallback.
 """
+
 import multiprocessing as mp
 import os
 import shutil
@@ -27,7 +28,9 @@ from .tab_gate import TableauForGate, TableauPauliBasis
 
 
 def parallel_t_merging_optimized(
-    t_layers: List[TableauForGate], measure_tab: TableauForGate, max_workers: int = None
+    t_layers: List[TableauForGate],
+    measure_tab: TableauForGate,
+    max_workers: Optional[int] = None,
 ) -> Tuple[List[TableauForGate], TableauForGate]:
     """
     Parallelized version of T-gate merging with a two-phase approach.
@@ -83,7 +86,7 @@ class ParallelRotationPauliCirc(RotationPauliCirc):
     Overrides t_merging method to use parallel helpers.
     """
 
-    def __init__(self, qc: QuantumCircuit, max_workers: int = None):
+    def __init__(self, qc: QuantumCircuit, max_workers: Optional[int] = None):
         super().__init__(qc)
         self.max_workers = max_workers or min(mp.cpu_count(), 12)
 
@@ -220,8 +223,8 @@ def convert_to_pbc_circuit(
     if_print_rpc: bool = False,
     layering_method: str = "v2",
     layering_max_checks: Optional[int] = None,
-    output_prefix: str = None,
-    max_workers: int = None,
+    output_prefix: Optional[str] = None,
+    max_workers: Optional[int] = None,
     use_nwqec: bool = True,
 ) -> tuple[QuantumCircuit, dict]:
     """Unified entry point for PBC conversion (nwqec when available, else parallel RPC)."""
@@ -247,6 +250,8 @@ def convert_to_pbc_circuit(
         fuse_applied = basic_stats.get("pbc_fuse_t_applied", False)
         pbc_stats = {
             **basic_stats,
+            "num_qubits": clifford_t_circuit.num_qubits,
+            "initial_clifford_t_t_gates_for_pbc": initial_clifford_t_t_count,
             "pbc_conversion_time": time.time() - start_time,
             "pbc_optimized": bool(
                 optimize_pbc and optimize_t_maxiter > 0 and fuse_applied

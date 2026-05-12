@@ -19,7 +19,7 @@ from qiskit.qasm2 import dump as qasm2_dump
 from qiskit.qasm2 import dumps as qasm2_dumps
 
 from .analyzer import analyze_clifford_t_circuit, analyze_pbc_circuit
-from .fidelity import MAX_QUBITS_FOR_FIDELITY, calculate_circuit_fidelity
+from .fidelity import calculate_circuit_fidelity
 from .parser import load_qasm_circuit
 from .pbc_converter import convert_to_pbc_circuit
 from .transpilers import (
@@ -27,7 +27,7 @@ from .transpilers import (
     transpile_to_solovay_kitaev_clifford_t,
 )
 
-LayeringMethod = Literal["bare", "v2", "v3", "singleton"]
+LayeringMethod = Literal["bare", "v2", "singleton"]
 PipelineName = Literal["gs", "sk"]
 
 
@@ -40,10 +40,14 @@ class PipelineConfig:
         pipeline: Which pipeline to execute ('gs' for Gridsynth or 'sk' for Solovay-Kitaev).
         gridsynth_precision: Precision passed to Gridsynth when pipeline='gs'.
         sk_recursion: Recursion depth for Solovay-Kitaev when pipeline='sk'.
-        layering_method: PBC layering strategy ('bare', 'v2', 'v3', or 'singleton').
-        layering_max_checks: Optional bound used with layered merging (maps v2 + bound to v3 behavior).
+        layering_method: PBC layering strategy ('bare', 'v2', or 'singleton').
+        layering_max_checks: Optional bound on v2's backward layer scan; ignored for other methods.
         optimize_t_maxiter: Number of T-merging iterations for the PBC step (0 disables optimization).
         prefer_cpp: Prefer the nwqec C++ backend for Gridsynth when available.
+        use_nwqec_pbc: Use the nwqec C++ PBC adapter when available; set False to
+            force the Python PBC pipeline (`RotationPauliCirc` + layering pass).
+            Useful for validating the Python path or for layer-count metrics that
+            the C++ path doesn't expose.
         calculate_fidelity: If True, compute fidelity between the original and Clifford+T circuits.
         return_intermediate: Request intermediate circuits from transpilers (recommended for fidelity).
         max_workers: Optional worker cap for the parallel PBC converter.
@@ -53,12 +57,13 @@ class PipelineConfig:
 
     pipeline: PipelineName = "gs"
     gridsynth_precision: int = 3
-    sk_recursion: int = 1
+    sk_recursion: int = 2
     layering_method: LayeringMethod = "v2"
     layering_max_checks: Optional[int] = None
     optimize_pbc: bool = False
     optimize_t_maxiter: int = 5
     prefer_cpp: bool = True
+    use_nwqec_pbc: bool = True
     calculate_fidelity: bool = True
     return_intermediate: bool = True
     max_workers: Optional[int] = None
@@ -79,7 +84,7 @@ class PipelineResult:
     timings: Dict[str, float]
     parameters: Dict[str, Any]
     intermediate_circuit: Optional[QuantumCircuit] = None
-    artifacts: Dict[str, str] = None
+    artifacts: Optional[Dict[str, str]] = None
 
     def to_dict(
         self,
@@ -164,6 +169,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     working_circuit = circuit.copy()
     timings: Dict[str, float] = {}
     artifacts: Dict[str, str] = {}
+    parameters: Dict[str, Any] = {}
 
     # Step 1: Clifford+T synthesis
     ct_start = time.time()
@@ -185,7 +191,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
                 return_intermediate=False,
                 prefer_cpp=config.prefer_cpp,
             )
-        parameters = {"gridsynth_precision": config.gridsynth_precision}
+        parameters["gridsynth_precision"] = config.gridsynth_precision
     else:
         # Solovay-Kitaev pipeline
         if config.return_intermediate:
@@ -202,7 +208,7 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
                 recursion_degree=config.sk_recursion,
                 return_intermediate=False,
             )
-        parameters = {"sk_recursion_degree": config.sk_recursion}
+        parameters["sk_recursion_degree"] = config.sk_recursion
 
     timings["transpilation_clifford_t_time"] = time.time() - ct_start
 
@@ -218,22 +224,17 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     )
 
     # Step 2: PBC conversion
-    effective_layering_method = (
-        "v3"
-        if config.layering_method == "v2" and config.layering_max_checks is not None
-        else config.layering_method
-    )
     pbc_start = time.time()
     pbc_circuit, pbc_stats = convert_to_pbc_circuit(
         clifford_t_circuit.copy(),
         optimize_pbc=config.optimize_pbc,
         optimize_t_maxiter=config.optimize_t_maxiter,
         if_print_rpc=False,
-        layering_method=effective_layering_method,
+        layering_method=config.layering_method,
         layering_max_checks=config.layering_max_checks,
         output_prefix=config.pbc_output_prefix,
         max_workers=config.max_workers,
-        use_nwqec=True,
+        use_nwqec=config.use_nwqec_pbc,
     )
     timings["pbc_conversion_time"] = time.time() - pbc_start
     if config.pbc_output_prefix:
@@ -252,30 +253,23 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     # Step 3: Fidelity (optional)
     fidelity_result: Optional[Dict[str, Any]] = None
     if config.calculate_fidelity:
-        # Skip SK fidelity when qubit count exceeds the small-circuit bound; avoid using GS for SK fidelity
-        if config.pipeline == "sk" and working_circuit.num_qubits > MAX_QUBITS_FOR_FIDELITY:
-            fidelity_result = {
-                "fidelity": "N/A",
-                "method": "skipped_over_qubit_bound",
-                "status": "skipped",
-                "reason": f">{MAX_QUBITS_FOR_FIDELITY} qubits for SK fidelity",
-            }
-        else:
-            fidelity_precision = config.gridsynth_precision
-
-            fidelity_result = calculate_circuit_fidelity(
-                working_circuit,
-                clifford_t_circuit,
-                gridsynth_precision=fidelity_precision,
-                sk_recursion_degree=(
-                    config.sk_recursion if config.pipeline == "sk" else None
-                ),
-                intermediate_qc=intermediate_circuit,
-            )
+        # `calculate_circuit_fidelity` routes itself based on qubit count and
+        # pipeline: small circuits use full-unitary process fidelity; large
+        # circuits use per-Rz product fidelity (gridsynth-based for GS,
+        # SK-based for SK via `rz_product_fidelity_sk`).
+        fidelity_result = calculate_circuit_fidelity(
+            working_circuit,
+            clifford_t_circuit,
+            gridsynth_precision=config.gridsynth_precision,
+            sk_recursion_degree=(
+                config.sk_recursion if config.pipeline == "sk" else None
+            ),
+            intermediate_qc=intermediate_circuit,
+        )
 
     parameters.update(
         {
-            "layering_method": effective_layering_method,
+            "layering_method": config.layering_method,
             "layering_max_checks": config.layering_max_checks,
             "optimize_t_maxiter": config.optimize_t_maxiter,
             "max_workers": config.max_workers,

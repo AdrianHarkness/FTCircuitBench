@@ -3,6 +3,7 @@
 Includes Rotation Enum and PBM Gate generation stubs.
 This would need to be replaced with the actual PBM logic from PauliTrans.
 """
+
 from enum import Enum
 
 from qiskit.circuit import Gate

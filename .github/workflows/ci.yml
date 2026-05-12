@@ -10,22 +10,97 @@ jobs:
   test:
     name: pytest (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11"]
-
+        python-version: ["3.10", "3.11", "3.12"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-
+      - uses: haskell-actions/setup@v2
+        id: setup-haskell
+        with:
+          ghc-version: "9.6"
+          cabal-version: "3.10"
+      - name: Cache cabal store
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.setup-haskell.outputs.cabal-store }}
+          key: cabal-${{ runner.os }}-ghc9.6-gridsynth-v1
+      - name: Install gridsynth
+        run: |
+          cabal update
+          cabal install newsynth --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
+          echo "$HOME/.cabal/bin" >> "$GITHUB_PATH"
+      - name: Sync deps
+        run: uv sync --all-extras
       - name: Run tests
-        run: pytest -v
+        run: uv run --no-sync pytest -v
+
+  lint:
+    name: Lint (ruff/black/isort)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Sync deps
+        run: uv sync --all-extras
+      - name: ruff
+        run: uv run ruff check ftcircuitbench tests
+      - name: black
+        run: uv run black --check ftcircuitbench tests
+      - name: isort
+        run: uv run isort --check-only ftcircuitbench tests
+
+  typecheck:
+    name: mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Sync deps
+        run: uv sync --all-extras
+      - name: mypy
+        run: uv run mypy ftcircuitbench
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - uses: haskell-actions/setup@v2
+        id: setup-haskell
+        with:
+          ghc-version: "9.6"
+          cabal-version: "3.10"
+      - name: Cache cabal store
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.setup-haskell.outputs.cabal-store }}
+          key: cabal-${{ runner.os }}-ghc9.6-gridsynth-v1
+      - name: Install gridsynth
+        run: |
+          cabal update
+          cabal install newsynth --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
+          echo "$HOME/.cabal/bin" >> "$GITHUB_PATH"
+      - name: Sync deps
+        run: uv sync --all-extras
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=ftcircuitbench --cov-report=xml --cov-report=term
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

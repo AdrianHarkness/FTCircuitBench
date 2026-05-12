@@ -50,7 +50,7 @@ def _create_stats_legend(
     fancybox: bool = True,
     shadow: bool = False,
     framealpha: float = 0.3,
-    position: tuple = None,
+    position: Any = None,
 ) -> None:
     """
     Create and display a modular statistics legend on the current figure.
@@ -147,8 +147,8 @@ def show_clifford_t_interaction_graph(
         G.add_node(i, label=f"q{i}")
 
     # Count interactions between qubits and collect operator stats
-    interaction_counts = defaultdict(int)
-    qubit_degree = defaultdict(int)
+    interaction_counts: Dict[Any, int] = defaultdict(int)
+    qubit_degree: Dict[int, int] = defaultdict(int)
 
     for instruction in circuit.data:
         qargs = instruction.qubits
@@ -373,8 +373,8 @@ def show_pbc_interaction_graph(
         G.add_node(i, label=f"q{i}")
 
     # Count interactions between qubits and collect operator stats
-    interaction_counts = defaultdict(int)
-    qubit_degree = defaultdict(int)
+    interaction_counts: Dict[Any, int] = defaultdict(int)
+    qubit_degree: Dict[int, int] = defaultdict(int)
     total_pbc_ops: int = 0
     rotation_ops: int = 0
     measurement_ops: int = 0
@@ -652,7 +652,7 @@ def show_operator_weight_histogram(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Count occurrences of each weight
-    weight_counts = {}
+    weight_counts: Dict[Any, int] = {}
     for weight in all_weights:
         weight_counts[weight] = weight_counts.get(weight, 0) + 1
 
@@ -661,9 +661,7 @@ def show_operator_weight_histogram(
     counts = [weight_counts[weight] for weight in weights]
 
     # Create bar plot (clearer than histogram for discrete integer data)
-    ax.bar(
-        weights, counts, color=color, alpha=alpha, edgecolor=edgecolor, linewidth=1
-    )
+    ax.bar(weights, counts, color=color, alpha=alpha, edgecolor=edgecolor, linewidth=1)
 
     # Customize the plot
     ax.set_xlabel("Operator Weight", fontsize=font_size)
@@ -781,9 +779,9 @@ def show_qubit_pbc_operations_plot(
             return "unknown", gate_name, None
 
     # Count PBC operations per qubit
-    qubit_operation_counts = defaultdict(int)
-    qubit_rotation_counts = defaultdict(int)
-    qubit_measurement_counts = defaultdict(int)
+    qubit_operation_counts: Dict[int, int] = defaultdict(int)
+    qubit_rotation_counts: Dict[int, int] = defaultdict(int)
+    qubit_measurement_counts: Dict[int, int] = defaultdict(int)
     # Whole-circuit totals (count each operator once)
     total_ops: int = 0
     total_rot: int = 0
@@ -924,8 +922,8 @@ def get_interaction_statistics(circuit: QuantumCircuit) -> Dict[str, Any]:
     Returns:
         Dictionary containing interaction statistics
     """
-    interaction_counts = defaultdict(int)
-    qubit_degree = defaultdict(int)
+    interaction_counts: Dict[Any, int] = defaultdict(int)
+    qubit_degree: Dict[int, int] = defaultdict(int)
 
     for instruction in circuit.data:
         qargs = instruction.qubits
@@ -999,7 +997,9 @@ def plot_pbc_pauli_weight_binned_bands(
         weights.append(len(instruction.qubits))
 
     if not weights:
-        print("⚠️  No PBC rotation or measurement operators found to plot weight bands.")
+        print(
+            "⚠️  No PBC rotation or measurement operators found to plot weight bands."
+        )
         return
 
     n = len(weights)

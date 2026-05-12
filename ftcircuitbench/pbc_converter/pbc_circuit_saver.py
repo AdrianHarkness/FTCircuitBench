@@ -2,9 +2,9 @@
 import os
 from typing import List
 
-from .tab_gate import (
+from .tab_gate import (  # Or TableauPauliBasis if t_layers elements are that
     TableauForGate,
-)  # Or TableauPauliBasis if t_layers elements are that
+)
 
 
 def _tableau_to_pauli_strings(tableau_obj: TableauForGate) -> List[str]:

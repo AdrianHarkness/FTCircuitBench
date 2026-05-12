@@ -3,6 +3,7 @@ import argparse
 import os
 from typing import Dict, List, Optional
 
+from ftcircuitbench.api import PipelineConfig, run_analysis_for_file
 from ftcircuitbench.benchmark_utils import (
     get_clifford_t_qasm_path,
     get_output_param_str,
@@ -12,27 +13,64 @@ from ftcircuitbench.benchmark_utils import (
     print_pipeline_comparison,
     save_json,
 )
-from ftcircuitbench.api import PipelineConfig, run_analysis_for_file
 
 
 def parse_arguments():
     """Parses command-line arguments for the circuit analyzer."""
-    parser = argparse.ArgumentParser(description="FTCircuitBench Circuit Analyzer")
+    parser = argparse.ArgumentParser(
+        description="FTCircuitBench Circuit Analyzer",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("qasm_file", help="Path to the QASM file to analyze")
-    parser.add_argument("--gridsynth-precision", type=int, default=5)
-    parser.add_argument("--sk-recursion", type=int, default=1)
+    parser.add_argument(
+        "--gridsynth-precision",
+        type=int,
+        default=5,
+        help="Gridsynth precision level (decimal digits): synthesis error per Rz "
+        "is ~10^(-precision). Higher = more accurate but more T gates per Rz.",
+    )
+    parser.add_argument(
+        "--sk-recursion",
+        type=int,
+        default=2,
+        help="Solovay-Kitaev recursion depth: each level roughly squares the "
+        "approximation accuracy. Higher = more accurate but more T gates per Rz.",
+    )
     parser.add_argument(
         "--layering-method",
-        choices=["bare", "v2", "v3", "singleton"],
+        choices=["bare", "v2", "singleton"],
         default="v2",
+        help="PBC layering strategy.",
     )
     parser.add_argument(
         "--layering-max-checks",
         type=int,
         default=None,
-        help="If set, bound layering by checking only the last K layers (uses v3)",
+        help="Bound v2 layering to the last K layers when scanning for insertion (ignored for other methods)",
     )
-    parser.add_argument("--pipeline", choices=["gs", "sk", "both"], default="gs")
+    parser.add_argument(
+        "--pipeline",
+        choices=["gs", "sk", "both"],
+        default="gs",
+        help="Which Clifford+T transpilation pipeline to run.",
+    )
+    parser.add_argument(
+        "--gs-backend",
+        choices=["auto", "cpp", "python"],
+        default="auto",
+        help="Gridsynth backend: 'cpp' uses the nwqec C++ implementation, 'python' "
+        "forces the Python implementation, 'auto' (default) prefers cpp when "
+        "nwqec is installed. Ignored for the SK pipeline.",
+    )
+    parser.add_argument(
+        "--pbc-backend",
+        choices=["auto", "cpp", "python"],
+        default="auto",
+        help="PBC conversion backend: 'cpp' uses the nwqec C++ PBC adapter, "
+        "'python' forces the Python `RotationPauliCirc` + layering pass, 'auto' "
+        "(default) uses cpp when nwqec is installed. The Python path exposes "
+        "layer-count metrics (`pbc_rotation_layers`) that the C++ path doesn't.",
+    )
     parser.add_argument(
         "--optimize-t-maxiter",
         type=int,
@@ -55,7 +93,11 @@ def parse_arguments():
         action="store_true",
         help="Skip fidelity calculation",
     )
-    parser.add_argument("--detailed", action="store_true")
+    parser.add_argument(
+        "--detailed",
+        action="store_true",
+        help="Show detailed per-stage tables in the pipeline output.",
+    )
     return parser.parse_args()
 
 
@@ -70,7 +112,10 @@ def _build_pipeline_jobs(
     optimize_t_maxiter: int,
     max_workers: Optional[int],
     calculate_fidelity: bool,
+    gs_backend: str = "auto",
+    pbc_backend: str = "auto",
 ) -> List[Dict[str, object]]:
+    use_nwqec_pbc = pbc_backend != "python"
     jobs: List[Dict[str, object]] = []
     if pipeline in ["gs", "both"]:
         param_str = get_output_param_str("gs", gridsynth_precision, "precision_level")
@@ -87,6 +132,8 @@ def _build_pipeline_jobs(
                     return_intermediate=True,
                     calculate_fidelity=calculate_fidelity,
                     max_workers=max_workers,
+                    prefer_cpp=(gs_backend != "python"),
+                    use_nwqec_pbc=use_nwqec_pbc,
                     clifford_output_path=get_clifford_t_qasm_path(
                         "clifford_t_output", input_base, param_str
                     ),
@@ -115,6 +162,7 @@ def _build_pipeline_jobs(
                     return_intermediate=True,
                     calculate_fidelity=calculate_fidelity,
                     max_workers=max_workers,
+                    use_nwqec_pbc=use_nwqec_pbc,
                     clifford_output_path=get_clifford_t_qasm_path(
                         "clifford_t_output", input_base, param_str
                     ),
@@ -165,7 +213,7 @@ def _summarize_pipeline_result(result, config: PipelineConfig) -> Dict[str, obje
 def run_analysis(
     qasm_file: str,
     gridsynth_precision: int = 3,
-    sk_recursion: int = 1,
+    sk_recursion: int = 2,
     layering_method: str = "v2",
     layering_max_checks: Optional[int] = None,
     pipeline: str = "gs",
@@ -174,6 +222,8 @@ def run_analysis(
     detailed: bool = False,
     max_workers: Optional[int] = None,
     skip_fidelity: bool = False,
+    gs_backend: str = "auto",
+    pbc_backend: str = "auto",
 ):
     """
     Programmatic API to run FTCircuitBench analysis using the packaged API.
@@ -183,12 +233,26 @@ def run_analysis(
     if not os.path.exists(qasm_file):
         raise FileNotFoundError(f"QASM file '{qasm_file}' not found.")
 
+    from ftcircuitbench.transpilers import is_nwqec_available
+
+    if gs_backend == "cpp" and pipeline in ("gs", "both") and not is_nwqec_available():
+        raise RuntimeError(
+            "--gs-backend=cpp requested, but nwqec is not installed. "
+            "Install nwqec or use --gs-backend=auto/python."
+        )
+    if pbc_backend == "cpp" and not is_nwqec_available():
+        raise RuntimeError(
+            "--pbc-backend=cpp requested, but nwqec is not installed. "
+            "Install nwqec or use --pbc-backend=auto/python."
+        )
+
     input_base = os.path.splitext(os.path.basename(qasm_file))[0]
     print("=== FTCircuitBench Analysis ===")
     print(f"Input: {qasm_file}")
-    print(
-        f"PBC Optimization: {'ON' if optimize_pbc else 'OFF'}"
-    )
+    print(f"PBC Optimization: {'ON' if optimize_pbc else 'OFF'}")
+    if pipeline in ("gs", "both"):
+        print(f"GS backend: {gs_backend}")
+    print(f"PBC backend: {pbc_backend}")
 
     jobs = _build_pipeline_jobs(
         input_base=input_base,
@@ -201,6 +265,8 @@ def run_analysis(
         optimize_t_maxiter=optimize_t_maxiter,
         max_workers=max_workers,
         calculate_fidelity=not skip_fidelity,
+        gs_backend=gs_backend,
+        pbc_backend=pbc_backend,
     )
 
     configs = [job["config"] for job in jobs]
@@ -260,6 +326,8 @@ def main():
         detailed=args.detailed,
         max_workers=args.max_workers,
         skip_fidelity=args.skip_fidelity,
+        gs_backend=args.gs_backend,
+        pbc_backend=args.pbc_backend,
     )
 
 

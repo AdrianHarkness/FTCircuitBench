@@ -3,7 +3,7 @@
 import json
 import numbers
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -49,7 +49,7 @@ def fmt_float_cell(value: Any, digits: int = 2):
     """
     if isinstance(value, numbers.Number):
         try:
-            return f"{float(value):.{digits}f}"
+            return f"{float(value):.{digits}f}"  # type: ignore[arg-type]
         except Exception:
             return str(value)
     return "N/A" if value is None else value
@@ -67,7 +67,7 @@ def save_qasm_circuit(circuit: QuantumCircuit, filepath: str):
 
 def find_all_qasm_files(qasm_root="qasm") -> Dict[str, Dict[str, str]]:
     """Recursively finds all .qasm files in a root directory."""
-    qasm_files = {}
+    qasm_files: Dict[str, Dict[str, str]] = {}
     for dirpath, _, filenames in os.walk(qasm_root):
         for filename in filenames:
             if filename.endswith(".qasm"):
@@ -153,7 +153,12 @@ def save_json(data, filepath):
 # --- Reporting and Printing Utilities ---
 
 
-def print_table(title: str, headers: list, rows: list, column_alignments: list = None):
+def print_table(
+    title: str,
+    headers: list,
+    rows: list,
+    column_alignments: Optional[list] = None,
+):
     """Print a formatted table."""
     if not rows:
         print(f"\n=== {title} ===")
@@ -424,14 +429,18 @@ def print_pipeline_comparison(
     gs_reduction = ((gs_init_t - gs_opt_t) / gs_init_t * 100) if gs_init_t > 0 else 0
     sk_reduction = ((sk_init_t - sk_opt_t) / sk_init_t * 100) if sk_init_t > 0 else 0
 
+    def _fmt_int(stats: dict, key: str) -> str:
+        v = stats.get(key)
+        return f"{v:,}" if isinstance(v, (int, float)) else "N/A"
+
     pbc_rows = [
         ["Input T-gates for PBC", f"{gs_init_t:,}", f"{sk_init_t:,}"],
         ["Final PBC Rotation Ops", f"{gs_opt_t:,}", f"{sk_opt_t:,}"],
         ["T-gate Reduction by PBC", f"{gs_reduction:.2f}%", f"{sk_reduction:.2f}%"],
         [
             "Final PBC Rotation Layers",
-            f"{gs_full_stats.get('pbc_rotation_layers', 'N/A'):,}",
-            f"{sk_full_stats.get('pbc_rotation_layers', 'N/A'):,}",
+            _fmt_int(gs_full_stats, "pbc_rotation_layers"),
+            _fmt_int(sk_full_stats, "pbc_rotation_layers"),
         ],
         [
             "Avg. Pauli Weight (Final)",
@@ -567,9 +576,7 @@ def get_interaction_graph_rows(stats, prefix=""):
             rows.append(["Modularity", modularity])
     numc_key = f"{prefix}interaction_graph_num_communities"
     if numc_key in stats:
-        rows.append(
-            ["Number of communities", stats[numc_key]]
-        )
+        rows.append(["Number of communities", stats[numc_key]])
     avgcs_key = f"{prefix}interaction_graph_avg_community_size"
     if avgcs_key in stats:
         avg_size = stats[avgcs_key]
@@ -586,14 +593,10 @@ def get_interaction_graph_rows(stats, prefix=""):
             rows.append(["Std community size", std_size])
     mincs_key = f"{prefix}interaction_graph_min_community_size"
     if mincs_key in stats:
-        rows.append(
-            ["Min community size", stats[mincs_key]]
-        )
+        rows.append(["Min community size", stats[mincs_key]])
     maxcs_key = f"{prefix}interaction_graph_max_community_size"
     if maxcs_key in stats:
-        rows.append(
-            ["Max community size", stats[maxcs_key]]
-        )
+        rows.append(["Max community size", stats[maxcs_key]])
 
     return rows
 
@@ -628,4 +631,3 @@ def get_stats_json_path(output_dir: str, circuit_name: str, param_str: str) -> s
     Returns the path for the stats JSON file.
     """
     return os.path.join(output_dir, f"{circuit_name}_{param_str}_stats.json")
-

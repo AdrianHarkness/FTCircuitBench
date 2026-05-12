@@ -1,5 +1,5 @@
 import collections
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -32,7 +32,9 @@ T_GATE_NAMES = {"t", "tdg"}
 
 def analyze_clifford_t_circuit(
     circuit: QuantumCircuit,
-    gridsynth_precision_used: int = None,  # Optional: if known from compilation
+    gridsynth_precision_used: Optional[
+        int
+    ] = None,  # Optional: if known from compilation
 ) -> dict:
     """
     Analyzes a quantum circuit assumed to be in Clifford+T form.
@@ -45,7 +47,7 @@ def analyze_clifford_t_circuit(
     Returns:
         dict: A dictionary containing analysis metrics.
     """
-    stats = {}
+    stats: Dict[str, Any] = {}
     ops_counts = collections.Counter(
         instruction.operation.name for instruction in circuit.data
     )
@@ -71,16 +73,18 @@ def analyze_clifford_t_circuit(
     num_qubits = circuit.num_qubits
 
     # Extract interaction counts from the graph edge weights
-    interaction_counts = {}
+    interaction_counts: Dict[Tuple[Any, Any], int] = {}
     total_interactions = 0
-    qubit_degree = collections.defaultdict(int)
+    qubit_degree: Dict[Any, int] = collections.defaultdict(int)
 
     # Reconstruct interaction_counts and qubit_degree from graph
-    for u, v, data in interaction_graph.edges(data=True):
+    for u, v, data in interaction_graph.edges(data=True):  # type: ignore[union-attr]
         weight = data.get("weight", 0)
         interaction_counts[(u, v)] = weight
         total_interactions += weight
-        qubit_degree[u] += weight  # Note: logic in original code added 1 for each interaction?
+        qubit_degree[
+            u
+        ] += weight  # Note: logic in original code added 1 for each interaction?
         # In original code:
         # interaction_counts[pair] += 1
         # qubit_degree[q1] += 1
@@ -101,8 +105,8 @@ def analyze_clifford_t_circuit(
     # Which corresponds to weighted degree in the graph.
 
     # Let's recalculate qubit_degree from the graph weights to be safe and consistent.
-    qubit_degree = dict(interaction_graph.degree(weight="weight"))
-    
+    qubit_degree = dict(interaction_graph.degree(weight="weight"))  # type: ignore[union-attr]
+
     # Fill in zeros for isolated qubits
     for i in range(num_qubits):
         if i not in qubit_degree:
@@ -125,7 +129,7 @@ def analyze_clifford_t_circuit(
             if max_possible_edges > 0
             else "Not computable: only one qubit"
         )
-        
+
         qubit_degrees = list(qubit_degree.values())
         stats["avg_qubit_interaction_degree"] = np.mean(qubit_degrees)
         stats["std_qubit_interaction_degree"] = np.std(qubit_degrees)
@@ -181,7 +185,7 @@ def analyze_clifford_t_circuit(
     # 4. Clifford Count (and other gate counts)
     clifford_count = 0
     other_gate_count = 0
-    detailed_clifford_counts = collections.defaultdict(int)
+    detailed_clifford_counts: Dict[str, int] = collections.defaultdict(int)
 
     for op_name, count in ops_counts.items():
         if op_name in T_GATE_NAMES:
@@ -211,7 +215,7 @@ def analyze_clifford_t_circuit(
     # Placeholder for T-depth - this is non-trivial
     # For now, we can count layers that *contain* T-gates if we abstract layers.
     # A simple proxy: count T gates on each qubit
-    t_gates_on_qubit = collections.defaultdict(int)
+    t_gates_on_qubit: Dict[int, int] = collections.defaultdict(int)
     for instruction in circuit.data:
         op_name = instruction.operation.name
         if op_name in T_GATE_NAMES:
@@ -272,8 +276,8 @@ def generate_interaction_graph(
         G.add_node(i, label=f"q{i}")
 
     # Count interactions between qubits
-    interaction_counts = collections.defaultdict(int)
-    qubit_degree = collections.defaultdict(int)
+    interaction_counts: Dict[Tuple[int, ...], int] = collections.defaultdict(int)
+    qubit_degree: Dict[int, int] = collections.defaultdict(int)
 
     for instruction in circuit.data:
         qargs = instruction.qubits

@@ -1,7 +1,7 @@
 # ./ftcircuitbench/analyzer/pbc_analyzer.py
 import collections
 import re
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -57,7 +57,7 @@ def count_non_utility_ops(circuit: QuantumCircuit) -> int:
 
 
 def analyze_pbc_circuit(
-    pbc_circuit: QuantumCircuit, pbc_conversion_stats: dict = None
+    pbc_circuit: QuantumCircuit, pbc_conversion_stats: Optional[dict] = None
 ) -> dict:
     """
     Analyzes a quantum circuit assumed to be in Pauli Based Computation form.
@@ -85,11 +85,11 @@ def analyze_pbc_circuit(
     num_rotation_ops = 0
     num_measurement_ops = 0
     num_utility_ops = 0
-    unknown_ops = collections.defaultdict(int)
+    unknown_ops: Dict[str, int] = collections.defaultdict(int)
 
     # For interaction graph
-    interaction_counts_pbc = collections.defaultdict(int)
-    qubit_degree_pbc = collections.defaultdict(
+    interaction_counts_pbc: Dict[Tuple[int, int], int] = collections.defaultdict(int)
+    qubit_degree_pbc: Dict[int, int] = collections.defaultdict(
         int
     )  # For individual qubit involvement in multi-Q ops
 
@@ -381,8 +381,8 @@ def generate_interaction_graph(
         G.add_node(i, label=f"q{i}")
 
     # Count interactions between qubits
-    interaction_counts = collections.defaultdict(int)
-    qubit_degree = collections.defaultdict(int)
+    interaction_counts: Dict[Tuple[int, int], int] = collections.defaultdict(int)
+    qubit_degree: Dict[int, int] = collections.defaultdict(int)
 
     for instruction in circuit.data:
         op = instruction.operation

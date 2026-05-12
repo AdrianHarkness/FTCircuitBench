@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import numpy as np
 from qiskit import QuantumCircuit
 from tqdm import tqdm
@@ -85,71 +87,34 @@ class RotationPauliCirc:
         self.measure_tab = TableauForGate(measure_mtx)
 
         t_tab = None
-
+        clifford_basis = ("cx", "h", "s", "sdg", "x", "y", "z")
+        gates = self.qc.reverse_ops()
         if ifprint:
-            # Show progress bar for all circuits when ifprint=True
-            for gate in tqdm(self.qc.reverse_ops(), desc="      Processing gates"):
-                if gate.name == "t" or gate.name == "tdg":
-                    q_index = gate.qubits[0]._index  # check logic
-                    temp_mtx = np.zeros((1, 2 * self.num_qubits + 1), dtype=bool)
-                    temp_mtx[0, self.num_qubits + q_index] = True  # set Z_i
-                    temp_mtx[0, -1] = gate.name == "tdg"
-                    if t_ct == 0:
-                        t_tab = TableauPauliBasis(temp_mtx)
-                    else:
-                        t_tab.append(temp_mtx)
-                    t_ct += 1
-                elif gate.name != "measure":
-                    if gate.name in ["barrier", "reset"]:
-                        continue
-                    # Treat sdg as three S gates
-                    if gate.name == "sdg":
-                        q_indices = [q._index for q in gate.qubits]
-                        for _ in range(3):
-                            self.measure_tab.apply_gate("s", q_indices)
-                            if t_ct != 0:
-                                t_tab.apply_gate("s", q_indices)
-                        continue
-                    if gate.name not in ["cx", "h", "s"]:
-                        print("unsupported gate detected: ", gate.name)
-                        return True
-                    q_indices = [q._index for q in gate.qubits]
+            gates = tqdm(gates, desc="      Processing gates")
 
-                    self.measure_tab.apply_gate(gate.name, q_indices)
-                    if t_ct != 0:
-                        t_tab.apply_gate(gate.name, q_indices)
-
-        else:
-            for gate in self.qc.reverse_ops():
-                if gate.name == "t" or gate.name == "tdg":
-                    q_index = gate.qubits[0]._index
-                    temp_mtx = np.zeros((1, 2 * self.num_qubits + 1), dtype=bool)
-                    temp_mtx[0, self.num_qubits + q_index] = True  # set Z_i
-                    temp_mtx[0, -1] = gate.name == "tdg"
-                    if t_ct == 0:
-                        t_tab = TableauPauliBasis(temp_mtx)
-                    else:
-                        t_tab.append(temp_mtx)
-                    t_ct += 1
-                elif gate.name != "measure":
-                    if gate.name in ["barrier", "reset"]:
-                        continue
-                    # Treat sdg as three S gates
-                    if gate.name == "sdg":
-                        q_indices = [q._index for q in gate.qubits]
-                        for _ in range(3):
-                            self.measure_tab.apply_gate("s", q_indices)
-                            if t_ct != 0:
-                                t_tab.apply_gate("s", q_indices)
-                        continue
-                    if gate.name not in ["cx", "h", "s"]:
-                        print("unsupported gate detected.", gate.name)
-                        return True
-                    q_indices = [q._index for q in gate.qubits]
-
-                    self.measure_tab.apply_gate(gate.name, q_indices)
-                    if t_ct != 0:
-                        t_tab.apply_gate(gate.name, q_indices)
+        for gate in gates:
+            if gate.name == "t" or gate.name == "tdg":
+                q_index = gate.qubits[0]._index
+                temp_mtx = np.zeros((1, 2 * self.num_qubits + 1), dtype=bool)
+                temp_mtx[0, self.num_qubits + q_index] = True  # set Z_i
+                temp_mtx[0, -1] = gate.name == "tdg"
+                if t_ct == 0:
+                    t_tab = TableauPauliBasis(temp_mtx)
+                else:
+                    t_tab.append(temp_mtx)
+                t_ct += 1
+            elif gate.name == "measure":
+                continue
+            elif gate.name in ("barrier", "reset"):
+                continue
+            elif gate.name in clifford_basis:
+                q_indices = [q._index for q in gate.qubits]
+                self.measure_tab.apply_gate(gate.name, q_indices)
+                if t_ct != 0:
+                    t_tab.apply_gate(gate.name, q_indices)
+            else:
+                print("unsupported gate detected: ", gate.name)
+                return True
 
         if t_tab is None:
             if ifprint:
@@ -171,13 +136,18 @@ class RotationPauliCirc:
     def layering(self, method="bare", ifprint=False, max_layer_checks=None):
         """
         Organizes T-gates into layers based on commutation rules.
-        Two methods available:
-        - 'bare': Basic layering that groups commuting T-gates
-        - 'v2': More sophisticated layering that may reduce circuit depth
+
+        Methods:
+        - 'bare': Basic single-pass layering that groups commuting T-gates.
+        - 'v2':   Backward-scan layering that may reduce circuit depth. Accepts
+                  `max_layer_checks` to bound the scan window.
+        - 'singleton': One T-gate per layer (disables grouping).
 
         Args:
-            method (str): Layering method to use ('bare' or 'v2')
-            ifprint (bool): If True, shows progress information
+            method (str): Layering method ('bare', 'v2', or 'singleton').
+            ifprint (bool): If True, shows progress information.
+            max_layer_checks (int | None): Bound for 'v2' backward scan; ignored
+                otherwise.
         """
         if ifprint:
             print(f"[PBC] Entering layering (method={method})...")
@@ -186,16 +156,10 @@ class RotationPauliCirc:
         if self.t_tab is None or self.t_tab.stab_counts == 0:
             self.t_layers = []  # Return empty list if no T gates
             return
-        if ifprint:
-            # Remove redundant status messages - progress bars show this info
-            pass
         if method == "bare":
             self.t_layers = self.t_tab.layer()
         elif method == "v2":
             self.t_layers = self.t_tab.layer_v2(max_layer_checks=max_layer_checks)
-        elif method == "v3":
-            # v3: bounded v2 variant
-            self.t_layers = self.t_tab.layer_v3(max_layer_checks=max_layer_checks)
         elif method == "singleton":
             # Each rotation becomes its own layer (no grouping)
             self.t_layers = []
@@ -285,7 +249,7 @@ class RotationPauliCirc:
                 - tracking_dict: Maps indices from tab1 to matching indices in tab2
         """
         total_ct = 0
-        tracking = {}
+        tracking: Dict[int, Any] = {}
         if tab1.stab_counts == 0 or tab2.stab_counts == 0:
             return total_ct, tracking
 
