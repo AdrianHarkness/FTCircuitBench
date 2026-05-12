@@ -290,7 +290,11 @@ def _approximation_error(original: QuantumCircuit, approx: QuantumCircuit) -> fl
     """Operator-norm distance up to global phase, on the same qubit count."""
     u_orig = Operator(original).data
     u_approx = Operator(approx).data
-    inner = np.vdot(u_orig.flatten(), u_approx.flatten())
+    # vdot conjugates its first arg: if u_approx = α·u_orig with |α|=1, then
+    # vdot(u_approx, u_orig) = conj(α)·‖u_orig‖², so dividing by |·| gives the
+    # phase that maps u_approx onto u_orig. Using vdot(u_orig, u_approx) here
+    # would yield α (the inverse direction) and leave a residual of ‖1−α²‖.
+    inner = np.vdot(u_approx.flatten(), u_orig.flatten())
     phase = inner / abs(inner) if abs(inner) > 1e-12 else 1.0
     return float(np.linalg.norm(u_orig - phase * u_approx, ord=2))
 
