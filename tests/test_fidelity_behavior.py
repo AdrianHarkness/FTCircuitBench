@@ -222,6 +222,9 @@ class _InProcessPool:
     def map(self, fn, args_list):
         return [fn(a) for a in args_list]
 
+    def starmap(self, fn, args_list):
+        return [fn(*a) for a in args_list]
+
 
 def _install_inprocess_pool(monkeypatch):
     monkeypatch.setattr(

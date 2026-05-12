@@ -264,6 +264,17 @@ def _synthesize_single_rz_with_sk(
     return approx_qc
 
 
+def _sk_fidelity_for_theta(theta_value: float, recursion_degree: int) -> float:
+    """Single-Rz SK fidelity. Module-level so it's picklable for multiprocessing."""
+    ideal = QuantumCircuit(1)
+    ideal.rz(theta_value, 0)
+    ideal_u = Operator(ideal)
+
+    approx_qc = _synthesize_single_rz_with_sk(theta_value, recursion_degree)
+    approx_u = Operator(approx_qc)
+    return _unitary_process_fidelity_1q(approx_u, ideal_u)
+
+
 def rz_product_fidelity_sk(
     intermediate_rz_qc: QuantumCircuit,
     recursion_degree: int,
@@ -306,15 +317,6 @@ def rz_product_fidelity_sk(
             "method": "rz_product_fidelity_sk",
         }
 
-    def _fid_for_theta(theta_value: float) -> float:
-        ideal = QuantumCircuit(1)
-        ideal.rz(theta_value, 0)
-        ideal_u = Operator(ideal)
-
-        approx_qc = _synthesize_single_rz_with_sk(theta_value, recursion_degree)
-        approx_u = Operator(approx_qc)
-        return _unitary_process_fidelity_1q(approx_u, ideal_u)
-
     # Per-theta fidelity is a pure function of the angle, so we synthesize
     # once per unique theta and fan the result out to every occurrence.
     unique_thetas = list(dict.fromkeys(rz_thetas))
@@ -322,9 +324,10 @@ def rz_product_fidelity_sk(
     unique_fids: Dict[float, float] = {}
     if use_multiprocessing and len(unique_thetas) > 1:
         try:
+            args = [(t, recursion_degree) for t in unique_thetas]
             with multiprocessing.Pool() as pool:
                 for theta, fid in zip(
-                    unique_thetas, pool.map(_fid_for_theta, unique_thetas)
+                    unique_thetas, pool.starmap(_sk_fidelity_for_theta, args)
                 ):
                     unique_fids[theta] = fid
         except Exception as e:
@@ -335,9 +338,13 @@ def rz_product_fidelity_sk(
                 stacklevel=2,
             )
             use_multiprocessing = False
-            unique_fids = {t: _fid_for_theta(t) for t in unique_thetas}
+            unique_fids = {
+                t: _sk_fidelity_for_theta(t, recursion_degree) for t in unique_thetas
+            }
     else:
-        unique_fids = {t: _fid_for_theta(t) for t in unique_thetas}
+        unique_fids = {
+            t: _sk_fidelity_for_theta(t, recursion_degree) for t in unique_thetas
+        }
 
     individual_fidelities: List[float] = [unique_fids[t] for t in rz_thetas]
 

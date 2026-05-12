@@ -19,7 +19,7 @@ from qiskit.qasm2 import dump as qasm2_dump
 from qiskit.qasm2 import dumps as qasm2_dumps
 
 from .analyzer import analyze_clifford_t_circuit, analyze_pbc_circuit
-from .fidelity import MAX_QUBITS_FOR_FIDELITY, calculate_circuit_fidelity
+from .fidelity import calculate_circuit_fidelity
 from .parser import load_qasm_circuit
 from .pbc_converter import convert_to_pbc_circuit
 from .transpilers import (
@@ -57,7 +57,7 @@ class PipelineConfig:
 
     pipeline: PipelineName = "gs"
     gridsynth_precision: int = 3
-    sk_recursion: int = 1
+    sk_recursion: int = 2
     layering_method: LayeringMethod = "v2"
     layering_max_checks: Optional[int] = None
     optimize_pbc: bool = False
@@ -253,29 +253,19 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     # Step 3: Fidelity (optional)
     fidelity_result: Optional[Dict[str, Any]] = None
     if config.calculate_fidelity:
-        # Skip SK fidelity when qubit count exceeds the small-circuit bound; avoid using GS for SK fidelity
-        if (
-            config.pipeline == "sk"
-            and working_circuit.num_qubits > MAX_QUBITS_FOR_FIDELITY
-        ):
-            fidelity_result = {
-                "fidelity": "N/A",
-                "method": "skipped_over_qubit_bound",
-                "status": "skipped",
-                "reason": f">{MAX_QUBITS_FOR_FIDELITY} qubits for SK fidelity",
-            }
-        else:
-            fidelity_precision = config.gridsynth_precision
-
-            fidelity_result = calculate_circuit_fidelity(
-                working_circuit,
-                clifford_t_circuit,
-                gridsynth_precision=fidelity_precision,
-                sk_recursion_degree=(
-                    config.sk_recursion if config.pipeline == "sk" else None
-                ),
-                intermediate_qc=intermediate_circuit,
-            )
+        # `calculate_circuit_fidelity` routes itself based on qubit count and
+        # pipeline: small circuits use full-unitary process fidelity; large
+        # circuits use per-Rz product fidelity (gridsynth-based for GS,
+        # SK-based for SK via `rz_product_fidelity_sk`).
+        fidelity_result = calculate_circuit_fidelity(
+            working_circuit,
+            clifford_t_circuit,
+            gridsynth_precision=config.gridsynth_precision,
+            sk_recursion_degree=(
+                config.sk_recursion if config.pipeline == "sk" else None
+            ),
+            intermediate_qc=intermediate_circuit,
+        )
 
     parameters.update(
         {

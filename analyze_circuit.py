@@ -17,14 +17,30 @@ from ftcircuitbench.benchmark_utils import (
 
 def parse_arguments():
     """Parses command-line arguments for the circuit analyzer."""
-    parser = argparse.ArgumentParser(description="FTCircuitBench Circuit Analyzer")
+    parser = argparse.ArgumentParser(
+        description="FTCircuitBench Circuit Analyzer",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("qasm_file", help="Path to the QASM file to analyze")
-    parser.add_argument("--gridsynth-precision", type=int, default=5)
-    parser.add_argument("--sk-recursion", type=int, default=1)
+    parser.add_argument(
+        "--gridsynth-precision",
+        type=int,
+        default=5,
+        help="Gridsynth precision level (decimal digits): synthesis error per Rz "
+        "is ~10^(-precision). Higher = more accurate but more T gates per Rz.",
+    )
+    parser.add_argument(
+        "--sk-recursion",
+        type=int,
+        default=2,
+        help="Solovay-Kitaev recursion depth: each level roughly squares the "
+        "approximation accuracy. Higher = more accurate but more T gates per Rz.",
+    )
     parser.add_argument(
         "--layering-method",
         choices=["bare", "v2", "singleton"],
         default="v2",
+        help="PBC layering strategy.",
     )
     parser.add_argument(
         "--layering-max-checks",
@@ -32,7 +48,12 @@ def parse_arguments():
         default=None,
         help="Bound v2 layering to the last K layers when scanning for insertion (ignored for other methods)",
     )
-    parser.add_argument("--pipeline", choices=["gs", "sk", "both"], default="gs")
+    parser.add_argument(
+        "--pipeline",
+        choices=["gs", "sk", "both"],
+        default="gs",
+        help="Which Clifford+T transpilation pipeline to run.",
+    )
     parser.add_argument(
         "--gs-backend",
         choices=["auto", "cpp", "python"],
@@ -72,7 +93,11 @@ def parse_arguments():
         action="store_true",
         help="Skip fidelity calculation",
     )
-    parser.add_argument("--detailed", action="store_true")
+    parser.add_argument(
+        "--detailed",
+        action="store_true",
+        help="Show detailed per-stage tables in the pipeline output.",
+    )
     return parser.parse_args()
 
 
@@ -188,7 +213,7 @@ def _summarize_pipeline_result(result, config: PipelineConfig) -> Dict[str, obje
 def run_analysis(
     qasm_file: str,
     gridsynth_precision: int = 3,
-    sk_recursion: int = 1,
+    sk_recursion: int = 2,
     layering_method: str = "v2",
     layering_max_checks: Optional[int] = None,
     pipeline: str = "gs",

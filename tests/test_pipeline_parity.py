@@ -358,23 +358,32 @@ def test_nwqec_behavioral_parity_final_output() -> None:
     today; the Python pipelines should match after the basis broadening.
 
     Note: `t`, `h`, `s`, `tdg`, `sdg` are excluded because synthesis legitimately
-    emits them when approximating `rz`. The preserved-exactly set is the one the
-    user's input-discrete-gates question is really asking about: gates that
-    survive the pipeline because they were already in the broader basis.
+    emits them when approximating `rz`. `x` is also excluded from exact parity
+    because gridsynth Python's emitted basis includes `X` (it can emit X gates
+    nondeterministically depending on the angle); we only assert input ≤ output
+    for it.
     """
     qc = _broad_basis_circuit()
-    # Input contains exactly one of each of these; synthesis cannot emit them.
-    preserved_exactly = {"x": 1, "y": 1, "z": 1, "cx": 1}
+    # Input contains one of each; these are NEVER emitted by single-qubit
+    # gridsynth/SK output, so output count must equal input count exactly.
+    exactly_preserved = {"y": 1, "z": 1, "cx": 1}
+    # Gridsynth Python's emitted basis includes X, so the output may have x ≥ input.
+    at_least_preserved = {"x": 1}
 
     out_gs = transpile_to_gridsynth_clifford_t(qc.copy(), gridsynth_precision=3)
     out_sk = transpile_to_solovay_kitaev_clifford_t(qc.copy(), recursion_degree=1)
 
     for label, out in [("gs", out_gs), ("sk", out_sk)]:
         counts = out.count_ops()
-        for gate, want in preserved_exactly.items():
+        for gate, want in exactly_preserved.items():
             got = counts.get(gate, 0)
             assert got == want, (
                 f"{label}: {gate} count = {got}, want {want}; full {dict(counts)}"
+            )
+        for gate, lower in at_least_preserved.items():
+            got = counts.get(gate, 0)
+            assert got >= lower, (
+                f"{label}: {gate} count = {got}, want >= {lower}; full {dict(counts)}"
             )
 
     if is_nwqec_available():
@@ -382,10 +391,15 @@ def test_nwqec_behavioral_parity_final_output() -> None:
             qc.copy(), epsilon=1e-3, forbid_python_fallback=True
         )
         counts = out_nw.count_ops()
-        for gate, want in preserved_exactly.items():
+        for gate, want in exactly_preserved.items():
             got = counts.get(gate, 0)
             assert got == want, (
                 f"nwqec: {gate} count = {got}, want {want}; full {dict(counts)}"
+            )
+        for gate, lower in at_least_preserved.items():
+            got = counts.get(gate, 0)
+            assert got >= lower, (
+                f"nwqec: {gate} count = {got}, want >= {lower}; full {dict(counts)}"
             )
 
 
