@@ -283,9 +283,9 @@ def run_analysis(
         stats_path = job["stats_path"]
 
         print(
-            f"\n\n{'='*50}\n"
+            f"\n\n{'=' * 50}\n"
             f"=== Pipeline: {pipeline_name.upper()} -> PBC ===\n"
-            f"{'='*50}"
+            f"{'=' * 50}"
         )
         print_circuit_stats(
             f"{pipeline_name.upper()} Pipeline Full Analysis", summary, detailed

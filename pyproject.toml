@@ -93,6 +93,19 @@ extend-exclude = ["misc/*.ipynb"]
 # "I" is isort; ruff's implementation is black-profile-compatible by default.
 extend-select = ["I"]
 
+[tool.ruff.lint.per-file-ignores]
+# bench/ is hand-laid-out benchmark code (see [tool.ruff.format] below). These
+# two rules are stylistic and would churn that layout: I001 here only wants a
+# blank line removed after the import block, and E731 wants the loop-local
+# lambda factories rewritten as defs. Correctness rules (F, E4, E9) still apply.
+"bench/*" = ["I001", "E731"]
+
+[tool.ruff.format]
+# Benchmark specs are hand-aligned into columns for readability; the formatter
+# collapses that alignment. Exclude bench/ from formatting only — linting and
+# import sorting still apply there.
+exclude = ["bench/**"]
+
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
