@@ -39,6 +39,9 @@ classifiers = [
 ]
 
 dependencies = [
+    # Pinned deliberately: Qiskit >2.0.2 shows a large performance regression in
+    # the transpilation workloads behind benchmark generation. Revisit as
+    # upstream performance recovers; uv.lock reproduces the tested environment.
     "qiskit==2.0.2",
     "numpy>=2.0.0",
     "scipy>=1.13.0",

@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Pre-commit configuration (`.pre-commit-config.yaml`) covering ruff, black,
-  isort, and assorted hygiene hooks.
+- Pre-commit configuration (`.pre-commit-config.yaml`) covering ruff (linting,
+  formatting, and import sorting) and assorted hygiene hooks.
 - `mypy` configuration in `pyproject.toml` and a `[tool.coverage]` section for
   `pytest-cov`.
 - CI matrix exercising Python 3.10, 3.11, and 3.12, plus separate
