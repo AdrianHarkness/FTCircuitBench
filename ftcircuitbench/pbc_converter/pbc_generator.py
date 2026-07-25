@@ -240,12 +240,17 @@ def convert_to_pbc_circuit(
 
     # Prefer nwqec PBC when available (bypasses Python RPC path)
     if use_nwqec and is_nwqec_available():
+        if output_prefix:
+            output_dir = os.path.dirname(output_prefix)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
         pbc_qc, basic_stats = transpile_to_pbc_cpp(
             clifford_t_circuit,
             is_file=False,
             t_opt=optimize_pbc and optimize_t_maxiter > 0,
             keep_cx=False,
             forbid_python_fallback=False,
+            output_prefix=output_prefix,
         )
         fuse_applied = basic_stats.get("pbc_fuse_t_applied", False)
         pbc_stats = {
@@ -399,7 +404,12 @@ def convert_to_pbc_circuit(
                 continue
             q_indices = [k for k, p in enumerate(pauli_chars) if p != "I"]
             qargs = [qreg[k] for k in q_indices]
-            pbc_qc.append(PBM.generate_measure(active_pauli_str), qargs)
+            # The phase bit is meaningful for measurements too: +ZZ and -ZZ are
+            # different observables. Carry it into the label exactly as the
+            # rotation branch above carries it into the angle sign, so both this
+            # path and the nwqec adapter emit the canonical Meas<sign><pauli>.
+            sign = "-" if pauli_row[-1] else "+"
+            pbc_qc.append(PBM.generate_measure(sign + active_pauli_str), qargs)
 
     if if_print_rpc:
         print("[PBC] PBC conversion complete.")

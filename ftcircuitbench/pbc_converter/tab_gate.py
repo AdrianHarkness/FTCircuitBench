@@ -311,21 +311,26 @@ class TableauForGate:
 
     def is_commute(self, stab_in, commutation_out=False):
         """
-        This function calculate whether the given stabilizer(s) commute with the current tableau
-        Will give a list of binary values,  0 -> commute
-                                            1 -> anti-commute
-        The first dimension corresponds to the input stabilizer(s)
-        The second dimension corresponds to the self stabilizers
+        This function calculates whether the given stabilizer(s) commute with the current tableau.
 
         Input:
             stab_in: this is the stabilizer(s) input, which is to determine the commutation relation with the current tableau
                 If the stab_in is a Tableau class instance, we directly calculate the commutation relation
                 If the stab_in is not a Tableau instance, it will be converted into Tableau instance at first.
+            commutation_out: if True, also return the full pairwise commutation matrix.
         Output:
-            commute_relation: the resulting commutation relation, 0 -> commute, 1 -> anti-commute
-        Note:
-            If the two tableaus have different qubit numbers, the smaller tableau will be extended by appending extra I's.
-            A warning will be printed to terminal.
+            all_commute: a single boolean -- True iff EVERY input stabilizer commutes
+                with EVERY stabilizer in this tableau. Note this is an aggregate, not a
+                per-pair result: one anti-commuting pair makes the whole answer False.
+            If commutation_out is True, returns (all_commute, commutation) where
+            `commutation` is the pairwise matrix of binary values,
+                0 -> commute
+                1 -> anti-commute
+            whose first dimension corresponds to the input stabilizer(s) and whose
+            second dimension corresponds to the self stabilizers.
+        Exception:
+            ValueError: if the input stabilizer(s) do not have the same qubit number
+                as this tableau. Operands are NOT padded to a common width.
         """
 
         if isinstance(stab_in, TableauForGate):

@@ -33,6 +33,43 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
+### gridsynth (optional)
+
+`gridsynth` is a separate, non-Python tool used by the Python Rz-synthesis path
+(`ftcircuitbench.decomposer`, which shells out to the binary). It is not
+installable via `uv`/`pip`. Without it, the ~20 parity tests that exercise that
+path skip; everything else, including the nwqec C++ backend, works normally.
+
+It ships in Peter Selinger's Haskell [`newsynth`](https://hackage.haskell.org/package/newsynth)
+package. CI builds it the same way (see `.github/workflows/ci.yml`):
+
+```bash
+cabal update
+cabal install newsynth --install-method=copy --overwrite-policy=always \
+  --installdir="$HOME/.cabal/bin"
+export PATH="$HOME/.cabal/bin:$PATH"   # add to your shell rc to persist
+```
+
+**GHC version constraint.** `newsynth` builds via a custom `Setup.hs` that
+depends on `superdoc`, which uses the pre-3.12 `FilePath`-based Cabal API. It
+does **not** compile with GHC 9.10+, where that API became `SymbolicPath` — the
+build fails in `Distribution/Superdoc/Hooks.hs` with `Couldn't match type
+[Char] with ... SymbolicPath`. CI pins GHC 9.6, so install a matching compiler
+rather than whatever your package manager ships by default:
+
+```bash
+# macOS/Linux; ghcup is also available via brew, apt, or the ghcup installer
+ghcup install ghc 9.6.6
+cabal install newsynth -w "$HOME/.ghcup/bin/ghc-9.6.6" \
+  --install-method=copy --overwrite-policy=always --installdir="$HOME/.cabal/bin"
+```
+
+Verify with:
+
+```bash
+gridsynth "(0.3)" --digits=3   # prints an H/T/S gate string
+```
+
 ## Running tests
 
 ```bash
@@ -45,7 +82,11 @@ Run with verbose output:
 uv run pytest -v
 ```
 
-Some tests require `nwqec` to be installed and (optionally) a `gridsynth` binary on your `PATH`. Tests that depend on optional tooling are skipped automatically when those tools are unavailable.
+Some tests require `nwqec` to be installed and (optionally) a `gridsynth` binary
+on your `PATH` (see [gridsynth (optional)](#gridsynth-optional) above). Tests
+that depend on optional tooling are skipped automatically when those tools are
+unavailable, so a run without them should still be green — just with more
+skips.
 
 ## Code style
 

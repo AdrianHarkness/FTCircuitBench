@@ -238,13 +238,17 @@ def run_pipeline(circuit: QuantumCircuit, config: PipelineConfig) -> PipelineRes
     )
     timings["pbc_conversion_time"] = time.time() - pbc_start
     if config.pbc_output_prefix:
+        # Only advertise artifacts that were actually written. Both PBC backends
+        # emit all four today, but a caller should never be handed a path to a
+        # file that does not exist.
+        candidate_artifacts = {
+            "pbc_pre_opt_layers": f"{config.pbc_output_prefix}_pre_opt_tlayers.txt",
+            "pbc_pre_opt_measurement_basis": f"{config.pbc_output_prefix}_pre_opt_measure_basis.txt",
+            "pbc_post_opt_layers": f"{config.pbc_output_prefix}_post_opt_tlayers.txt",
+            "pbc_post_opt_measurement_basis": f"{config.pbc_output_prefix}_post_opt_measure_basis.txt",
+        }
         artifacts.update(
-            {
-                "pbc_pre_opt_layers": f"{config.pbc_output_prefix}_pre_opt_tlayers.txt",
-                "pbc_pre_opt_measurement_basis": f"{config.pbc_output_prefix}_pre_opt_measure_basis.txt",
-                "pbc_post_opt_layers": f"{config.pbc_output_prefix}_post_opt_tlayers.txt",
-                "pbc_post_opt_measurement_basis": f"{config.pbc_output_prefix}_post_opt_measure_basis.txt",
-            }
+            {k: v for k, v in candidate_artifacts.items() if os.path.exists(v)}
         )
 
     pbc_analysis = analyze_pbc_circuit(pbc_circuit, pbc_conversion_stats=pbc_stats)

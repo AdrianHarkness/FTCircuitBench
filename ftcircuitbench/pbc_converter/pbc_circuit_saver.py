@@ -1,6 +1,6 @@
 # ftcircuitbench/pbc_converter/pbc_circuit_saver.py
 import os
-from typing import List
+from typing import List, Optional
 
 from .tab_gate import (  # Or TableauPauliBasis if t_layers elements are that
     TableauForGate,
@@ -36,8 +36,14 @@ def save_pbc_layers_txt(t_layers: List[TableauForGate], filepath: str):
     # print(f"Saved PBC T-layers to: {filepath}")
 
 
-def save_pbc_measurement_basis_txt(measure_tab: TableauForGate, filepath: str):
-    """Saves the measurement basis to a text file."""
+def save_pbc_measurement_basis_txt(
+    measure_tab: Optional[TableauForGate], filepath: str
+):
+    """Saves the measurement basis to a text file.
+
+    `measure_tab` may be None (a circuit with no measurement basis), in which
+    case a "NO MEASUREMENT BASIS" placeholder is written.
+    """
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w") as f:
         if not measure_tab or measure_tab.stab_counts == 0:

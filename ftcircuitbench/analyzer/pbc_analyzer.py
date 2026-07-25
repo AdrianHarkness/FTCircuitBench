@@ -8,12 +8,33 @@ import numpy as np
 from qiskit import QuantumCircuit
 
 
+def split_pauli_sign(pauli_str: str) -> Tuple[str, str]:
+    """Split a possibly sign-prefixed Pauli string into (sign, bare_pauli).
+
+    Measurement strings returned by `parse_pbc_gate_name` always carry a leading
+    '+' or '-'. Callers computing a Pauli *weight* must count characters in the
+    bare part only -- counting the sign inflates every measurement weight by one.
+
+    >>> split_pauli_sign("+XZ")
+    ('+', 'XZ')
+    >>> split_pauli_sign("XZ")
+    ('+', 'XZ')
+    """
+    if pauli_str and pauli_str[0] in "+-":
+        return pauli_str[0], pauli_str[1:]
+    return "+", pauli_str
+
+
 def parse_pbc_gate_name(gate_name: str):
     """
     Parses PBC gate names like 'RXYZ(pi/8)' or 'MeasXYZ'.
     Returns (type: 'rotation'|'measurement', pauli_string_in_name, params).
-    pauli_string_in_name is the XYZ part from the gate name.
     Params are angle strings for rotation, None for measurement.
+
+    For rotations, pauli_string_in_name is the bare XYZ part. For measurements it
+    is *sign-prefixed* and normalized to always carry a sign ('MeasXZ' and
+    'Meas+XZ' both yield '+XZ'), so use `split_pauli_sign` before measuring
+    weight or comparing against a bare Pauli.
     """
     # Regex to capture the Pauli part (e.g., XYZ) and parameters (e.g., pi/8)
     # Assumes Pauli string in name consists of I, X, Y, Z
@@ -130,11 +151,7 @@ def analyze_pbc_circuit(
         elif op_type == "measurement":
             num_measurement_ops += 1
             # pauli_str_in_name may include a leading sign; strip it for weight
-            core = (
-                pauli_str_in_name[1:]
-                if pauli_str_in_name and pauli_str_in_name[0] in "+-"
-                else pauli_str_in_name
-            )
+            _sign, core = split_pauli_sign(pauli_str_in_name)
             weight = len(core)
 
             if len(core) != num_op_qubits:

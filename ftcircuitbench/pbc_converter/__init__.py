@@ -4,6 +4,7 @@ Pauli Based Computation (PBC) converter for FTCircuitBench.
 Implements logic to convert Clifford+T circuits to PBC.
 """
 
+from .layers import commuting_layer_runs, paulis_commute
 from .pbc_circuit_reader import (
     analyze_pbc_file_content,
     parse_pauli_string,
@@ -24,6 +25,8 @@ __all__ = [
     "Rotation",
     "PBM",
     "convert_to_pbc_circuit",
+    "commuting_layer_runs",
+    "paulis_commute",
     "save_pbc_layers_txt",
     "save_pbc_measurement_basis_txt",
     "read_combined_pbc_file",

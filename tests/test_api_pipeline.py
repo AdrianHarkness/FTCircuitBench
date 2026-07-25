@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from qiskit import QuantumCircuit
@@ -35,6 +36,23 @@ def _fake_transpile_sk(circuit, **kwargs):
     return ct
 
 
+def _fake_convert_to_pbc_circuit(_circuit, **kwargs):
+    """Stand-in for the real converter.
+
+    Both real PBC backends write the four artifact files when `output_prefix` is
+    set, so the stub must too -- `run_pipeline` only advertises artifacts that
+    exist on disk, and a stub that writes nothing would make the artifact
+    assertions vacuous.
+    """
+    output_prefix = kwargs.get("output_prefix")
+    if output_prefix:
+        os.makedirs(os.path.dirname(output_prefix) or ".", exist_ok=True)
+        for stage in ("pre_opt", "post_opt"):
+            Path(f"{output_prefix}_{stage}_tlayers.txt").write_text("LAYER 0\n  +XI\n")
+            Path(f"{output_prefix}_{stage}_measure_basis.txt").write_text("+XI\n")
+    return QuantumCircuit(2), {"pbc_t_operators": 1}
+
+
 def _patch_api_dependencies(monkeypatch):
     monkeypatch.setattr(
         api_mod, "transpile_to_gridsynth_clifford_t", _fake_transpile_gs
@@ -42,11 +60,7 @@ def _patch_api_dependencies(monkeypatch):
     monkeypatch.setattr(
         api_mod, "transpile_to_solovay_kitaev_clifford_t", _fake_transpile_sk
     )
-    monkeypatch.setattr(
-        api_mod,
-        "convert_to_pbc_circuit",
-        lambda _c, **_kwargs: (QuantumCircuit(2), {"pbc_t_operators": 1}),
-    )
+    monkeypatch.setattr(api_mod, "convert_to_pbc_circuit", _fake_convert_to_pbc_circuit)
     monkeypatch.setattr(
         api_mod,
         "analyze_clifford_t_circuit",

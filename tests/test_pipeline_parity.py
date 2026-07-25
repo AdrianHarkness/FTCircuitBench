@@ -7,6 +7,7 @@ the circuit at each pipeline stage and assert structural parity.
 from __future__ import annotations
 
 import math
+import shutil
 
 import numpy as np
 import pytest
@@ -33,6 +34,24 @@ from ftcircuitbench.transpilers.sk_transpiler import (
 from ftcircuitbench.transpilers.sk_transpiler import (
     transpile_to_solovay_kitaev_clifford_t,
 )
+
+# ---------------------------------------------------------------------------
+# Optional-tooling guards
+# ---------------------------------------------------------------------------
+
+# The Python gridsynth pipeline shells out to the `gridsynth` binary (see
+# `decomposer._run_gridsynth_cli`), which is optional tooling installed
+# separately from the Python dependencies — CI provisions it via
+# `cabal install newsynth`. Tests that actually reach RZ synthesis on that path
+# must skip when it is absent, mirroring the `is_nwqec_available()` guards used
+# for the C++ backend. Note this skips the whole test, so the SK/NWQEC
+# assertions inside mixed tests are skipped too; that matches how the nwqec
+# guards already behave in this file.
+requires_gridsynth = pytest.mark.skipif(
+    shutil.which("gridsynth") is None,
+    reason="gridsynth binary not on PATH (see CONTRIBUTING.md for install)",
+)
+
 
 # ---------------------------------------------------------------------------
 # Test inputs (kept small + RZ-bearing to exercise the synthesis step)
@@ -119,6 +138,7 @@ def test_each_transpiler_module_uses_canonical_intermediate() -> None:
 # ---------------------------------------------------------------------------
 
 
+@requires_gridsynth
 @pytest.mark.parametrize("factory", _INPUT_FACTORIES)
 def test_intermediate_is_strictly_in_canonical_basis_gs(factory) -> None:
     inter, _ = transpile_to_gridsynth_clifford_t(
@@ -154,6 +174,7 @@ def test_intermediate_is_strictly_in_canonical_basis_nwqec(factory) -> None:
 # ---------------------------------------------------------------------------
 
 
+@requires_gridsynth
 @pytest.mark.parametrize("factory", _INPUT_FACTORIES)
 def test_intermediates_match_across_pipelines(factory) -> None:
     """Same input + same canonical intermediate basis + opt-level=0 ==> same intermediate."""
@@ -191,6 +212,7 @@ def test_intermediate_preserves_unitary(factory) -> None:
 # ---------------------------------------------------------------------------
 
 
+@requires_gridsynth
 @pytest.mark.parametrize("factory", _INPUT_FACTORIES)
 def test_final_in_pbc_basis_gs(factory) -> None:
     out = transpile_to_gridsynth_clifford_t(factory(), gridsynth_precision=3)
@@ -268,6 +290,7 @@ def _measurement_circuit() -> QuantumCircuit:
     return qc
 
 
+@requires_gridsynth
 def test_measurement_removal_parity() -> None:
     qc = _measurement_circuit()
     out_gs = transpile_to_gridsynth_clifford_t(qc.copy(), gridsynth_precision=3)
@@ -299,6 +322,7 @@ def _approximation_error(original: QuantumCircuit, approx: QuantumCircuit) -> fl
     return float(np.linalg.norm(u_orig - phase * u_approx, ord=2))
 
 
+@requires_gridsynth
 def test_gs_final_approximates_input() -> None:
     qc = _rz_circuit_simple()
     out = transpile_to_gridsynth_clifford_t(qc.copy(), gridsynth_precision=3)
@@ -347,6 +371,7 @@ def _broad_basis_circuit() -> QuantumCircuit:
     return qc
 
 
+@requires_gridsynth
 def test_intermediate_preserves_discrete_gates_gs() -> None:
     """Intermediate must contain {t, tdg, sdg, x, y, z} (one each), not decomposed away."""
     qc = _broad_basis_circuit()
@@ -381,6 +406,7 @@ def test_intermediate_preserves_discrete_gates_nwqec() -> None:
         assert counts.get(g, 0) >= 1, f"NWQEC intermediate dropped {g}: {dict(counts)}"
 
 
+@requires_gridsynth
 def test_nwqec_behavioral_parity_final_output() -> None:
     """For the broad-basis input, gates that no synthesis engine emits must be
     preserved exactly (input count = output count). NWQEC C++ already does this
@@ -470,6 +496,7 @@ def test_single_t_input_not_reapproximated_nwqec() -> None:
 # ---------------------------------------------------------------------------
 
 
+@requires_gridsynth
 def test_pbc_converter_accepts_final_output_gs() -> None:
     from ftcircuitbench.pbc_converter.r_pauli_circ import RotationPauliCirc
 
@@ -526,6 +553,7 @@ def _reference_inputs() -> list[QuantumCircuit]:
     return out
 
 
+@requires_gridsynth
 @pytest.mark.parametrize("qc", _reference_inputs())
 def test_pipelines_preserve_input_discrete_gates(qc: QuantumCircuit) -> None:
     """Behavioral parity: discrete gates present in the input must survive
@@ -573,6 +601,7 @@ def test_pipelines_preserve_input_discrete_gates(qc: QuantumCircuit) -> None:
             ), f"NW dropped {gate}: {dict(counts_nw)}"
 
 
+@requires_gridsynth
 @pytest.mark.parametrize("qc", _reference_inputs())
 def test_gs_python_unitary_matches_nwqec(qc: QuantumCircuit) -> None:
     """Both pipelines call gridsynth at the same precision. The output gate
@@ -612,6 +641,7 @@ def test_sk_python_unitary_close_to_nwqec(qc: QuantumCircuit) -> None:
     ), f"SK fidelity {fid_sk:.6f} too low (recursion_degree=3 was expected to give >= 0.5)"
 
 
+@requires_gridsynth
 @pytest.mark.parametrize("qc", _reference_inputs())
 def test_all_three_pipelines_pbc_compatible(qc: QuantumCircuit) -> None:
     """The end-to-end goal: each pipeline's output must feed into PBC successfully."""

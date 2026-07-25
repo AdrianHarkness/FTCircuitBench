@@ -4,7 +4,7 @@ Visualization utilities for FTCircuitBench.
 
 import os
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -354,12 +354,13 @@ def show_pbc_interaction_graph(
             import re
 
             rot_match = re.match(r"R([IXYZ]+)\(([^)]+)\)", gate_name)
-            meas_match = re.match(r"Meas([IXYZ]+)", gate_name)
+            meas_match = re.match(r"Meas([+-]?)([IXYZ]+)", gate_name)
 
             if rot_match:
                 return "rotation", rot_match.group(1), [rot_match.group(2)]
             elif meas_match:
-                return "measurement", meas_match.group(1), None
+                sign = meas_match.group(1) or "+"
+                return "measurement", f"{sign}{meas_match.group(2)}", None
             elif gate_name in ["barrier", "snapshot", "delay", "id"]:
                 return "utility", gate_name, None
             return "unknown", gate_name, None
@@ -596,20 +597,27 @@ def show_operator_weight_histogram(
     """
     # Import the parse_pbc_gate_name function
     try:
-        from .pbc_analyzer import parse_pbc_gate_name
+        from .pbc_analyzer import parse_pbc_gate_name, split_pauli_sign
     except ImportError:
         # Fallback if the module is not available
+        def split_pauli_sign(pauli_str: str) -> Tuple[str, str]:
+            """Fallback sign splitter; mirrors pbc_analyzer.split_pauli_sign."""
+            if pauli_str and pauli_str[0] in "+-":
+                return pauli_str[0], pauli_str[1:]
+            return "+", pauli_str
+
         def parse_pbc_gate_name(gate_name: str):
             """Fallback parser for PBC gate names."""
             import re
 
             rot_match = re.match(r"R([IXYZ]+)\(([^)]+)\)", gate_name)
-            meas_match = re.match(r"Meas([IXYZ]+)", gate_name)
+            meas_match = re.match(r"Meas([+-]?)([IXYZ]+)", gate_name)
 
             if rot_match:
                 return "rotation", rot_match.group(1), [rot_match.group(2)]
             elif meas_match:
-                return "measurement", meas_match.group(1), None
+                sign = meas_match.group(1) or "+"
+                return "measurement", f"{sign}{meas_match.group(2)}", None
             elif gate_name in ["barrier", "snapshot", "delay", "id"]:
                 return "utility", gate_name, None
             print(f"Unknown operator: {gate_name}")
@@ -632,9 +640,11 @@ def show_operator_weight_histogram(
             weight = sum(1 for p_char in pauli_str_in_name if p_char != "I")
             rotation_weights.append(weight)
         elif op_type == "measurement":
-            # For PBC measurements, weight is the number of non-Identity Paulis
-            # Count non-identity Paulis in the Pauli string
-            weight = sum(1 for p_char in pauli_str_in_name if p_char != "I")
+            # For PBC measurements, weight is the number of non-Identity Paulis.
+            # Measurement strings are sign-prefixed ('+XZ'), so strip the sign
+            # first -- counting it inflates every measurement weight by one.
+            _sign, bare_pauli = split_pauli_sign(pauli_str_in_name)
+            weight = sum(1 for p_char in bare_pauli if p_char != "I")
             measurement_weights.append(weight)
         # Skip utility and unknown operators for PBC analysis
 
@@ -768,12 +778,13 @@ def show_qubit_pbc_operations_plot(
             import re
 
             rot_match = re.match(r"R([IXYZ]+)\(([^)]+)\)", gate_name)
-            meas_match = re.match(r"Meas([IXYZ]+)", gate_name)
+            meas_match = re.match(r"Meas([+-]?)([IXYZ]+)", gate_name)
 
             if rot_match:
                 return "rotation", rot_match.group(1), [rot_match.group(2)]
             elif meas_match:
-                return "measurement", meas_match.group(1), None
+                sign = meas_match.group(1) or "+"
+                return "measurement", f"{sign}{meas_match.group(2)}", None
             elif gate_name in ["barrier", "snapshot", "delay", "id"]:
                 return "utility", gate_name, None
             return "unknown", gate_name, None
@@ -978,11 +989,12 @@ def plot_pbc_pauli_weight_binned_bands(
 
         def parse_pbc_gate_name(gate_name: str):
             rot_match = re.match(r"R([IXYZ]+)\(([^)]+)\)", gate_name)
-            meas_match = re.match(r"Meas([IXYZ]+)", gate_name)
+            meas_match = re.match(r"Meas([+-]?)([IXYZ]+)", gate_name)
             if rot_match:
                 return "rotation", rot_match.group(1), [rot_match.group(2)]
             elif meas_match:
-                return "measurement", meas_match.group(1), None
+                sign = meas_match.group(1) or "+"
+                return "measurement", f"{sign}{meas_match.group(2)}", None
             elif gate_name in ["barrier", "snapshot", "delay", "id"]:
                 return "utility", gate_name, None
             return "unknown", gate_name, None
@@ -1178,11 +1190,12 @@ def plot_pbc_operator_heatmap(
 
         def parse_pbc_gate_name(gate_name: str):
             rot_match = re.match(r"R([IXYZ]+)\(([^)]+)\)", gate_name)
-            meas_match = re.match(r"Meas([IXYZ]+)", gate_name)
+            meas_match = re.match(r"Meas([+-]?)([IXYZ]+)", gate_name)
             if rot_match:
                 return "rotation", rot_match.group(1), [rot_match.group(2)]
             elif meas_match:
-                return "measurement", meas_match.group(1), None
+                sign = meas_match.group(1) or "+"
+                return "measurement", f"{sign}{meas_match.group(2)}", None
             elif gate_name in ["barrier", "snapshot", "delay", "id"]:
                 return "utility", gate_name, None
             return "unknown", gate_name, None

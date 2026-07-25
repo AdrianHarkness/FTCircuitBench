@@ -90,21 +90,27 @@ def combine_pbc_files_same_dir(target_dir: str, run_prefix: str, stage: str):
     measure_basis_filepath = os.path.join(
         target_dir, f"{run_prefix}_{stage}_measure_basis.txt"
     )
+    has_tlayers = os.path.exists(tlayers_filepath)
+    has_measure_basis = os.path.exists(measure_basis_filepath)
+    if not has_tlayers and not has_measure_basis:
+        # Nothing to combine. Writing a combined file here would produce a
+        # document whose sections all read "File not found.", which looks like
+        # real (empty) PBC output rather than absent input.
+        print(
+            f"[WARN] No PBC artifacts to combine for '{run_prefix}_{stage}'; skipping."
+        )
+        return
     try:
         with open(combined_filepath, "w") as outfile:
-            outfile.write(f"--- T-Layers ({stage.replace('_',' ')}) ---\n")
-            if os.path.exists(tlayers_filepath):
+            if has_tlayers:
+                outfile.write(f"--- T-Layers ({stage.replace('_',' ')}) ---\n")
                 with open(tlayers_filepath, "r") as infile:
                     outfile.write(infile.read())
-            else:
-                outfile.write("File not found.\n")
-            outfile.write("\n\n")
-            outfile.write(f"--- Measurement Basis ({stage.replace('_',' ')}) ---\n")
-            if os.path.exists(measure_basis_filepath):
+                outfile.write("\n\n")
+            if has_measure_basis:
+                outfile.write(f"--- Measurement Basis ({stage.replace('_',' ')}) ---\n")
                 with open(measure_basis_filepath, "r") as infile:
                     outfile.write(infile.read())
-            else:
-                outfile.write("File not found.\n")
         # Only delete after successful write
         if os.path.exists(tlayers_filepath):
             os.remove(tlayers_filepath)

@@ -23,13 +23,20 @@ from __future__ import annotations
 import os
 import re
 import tempfile
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
+import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.qasm2 import dumps as qasm2_dumps
 
 from ftcircuitbench.analyzer import analyze_pbc_circuit
+from ftcircuitbench.pbc_converter.layers import commuting_layer_runs
+from ftcircuitbench.pbc_converter.pbc_circuit_saver import (
+    save_pbc_layers_txt,
+    save_pbc_measurement_basis_txt,
+)
 from ftcircuitbench.pbc_converter.pbm import PBM, Rotation
+from ftcircuitbench.pbc_converter.tab_gate import TableauForGate
 
 _QREG_RE = re.compile(r"^qreg\s+([a-zA-Z_][a-zA-Z0-9_]*)\[(\d+)\];")
 _T_RE = re.compile(r"^t_pauli\s+([+-][IXYZ]+)\s*;?")
@@ -54,6 +61,7 @@ def transpile_to_pbc_cpp(
     t_opt: bool = False,
     keep_cx: bool = False,
     forbid_python_fallback: bool = True,
+    output_prefix: Optional[str] = None,
 ) -> Tuple[QuantumCircuit, Dict]:
     import nwqec as nq
 
@@ -105,6 +113,8 @@ def transpile_to_pbc_cpp(
         pre_opt_measurement_ops = pre_opt_counts.get("m_pauli", 0)
         # Analyze pre-optimization PBC circuit to populate pre_opt_* stats
         pre_qasm = circ.to_qasm()
+        if output_prefix:
+            _save_nwqec_artifacts(pre_qasm, output_prefix, "pre_opt")
         pre_pbc_qc, pre_basic_stats = pbc_qasm_to_pbm(pre_qasm)
         pre_analysis = analyze_pbc_circuit(
             pre_pbc_qc, pbc_conversion_stats=pre_basic_stats
@@ -135,6 +145,8 @@ def transpile_to_pbc_cpp(
 
     # Export to QASM and adapt to PBM circuit
     qasm = circ.to_qasm()
+    if output_prefix:
+        _save_nwqec_artifacts(qasm, output_prefix, "post_opt")
     pbc_qc, stats = pbc_qasm_to_pbm(qasm)
     # Analyze post-optimization PBC circuit to populate pbc_* stats
     post_analysis = analyze_pbc_circuit(pbc_qc, pbc_conversion_stats=stats)
@@ -202,9 +214,59 @@ def _angle_for(op: str, sign: str) -> str:
     raise ValueError(f"Unknown op kind for angle mapping: {op}")
 
 
+def _collect_pbc_paulis(qasm: str) -> Tuple[list[str], list[str]]:
+    """Extract the full-width signed rotation and measurement Pauli strings.
+
+    Returns (t_pauli_strings, m_pauli_strings) in emission order. These are the
+    same full-width representation the text artifacts use, so they can be handed
+    straight to TableauForGate.convert_back.
+    """
+    t_paulis: list[str] = []
+    m_paulis: list[str] = []
+    for raw in qasm.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("//"):
+            continue
+        m = _T_RE.match(line)
+        if m:
+            t_paulis.append(m.group(1))
+            continue
+        m = _M_RE.match(line)
+        if m:
+            m_paulis.append(m.group(1))
+    return t_paulis, m_paulis
+
+
+def _save_nwqec_artifacts(qasm: str, output_prefix: str, stage: str) -> None:
+    """Write the *_tlayers.txt / *_measure_basis.txt artifacts for nwqec output.
+
+    Layer boundaries are recovered from the emitted order (see
+    `pbc_converter.layers`), then reused through the same savers the Python path
+    uses so both backends produce byte-compatible files.
+    """
+    t_paulis, m_paulis = _collect_pbc_paulis(qasm)
+
+    layer_tabs = []
+    for layer in commuting_layer_runs(t_paulis):
+        rows = [TableauForGate.convert_back(p).tableau for p in layer]
+        layer_tabs.append(TableauForGate(np.vstack(rows)))
+    save_pbc_layers_txt(layer_tabs, f"{output_prefix}_{stage}_tlayers.txt")
+
+    measure_tab = None
+    if m_paulis:
+        rows = [TableauForGate.convert_back(p).tableau for p in m_paulis]
+        measure_tab = TableauForGate(np.vstack(rows))
+    save_pbc_measurement_basis_txt(
+        measure_tab, f"{output_prefix}_{stage}_measure_basis.txt"
+    )
+
+
 def pbc_qasm_to_pbm(qasm: str) -> Tuple[QuantumCircuit, Dict]:
     """
     Convert nwqec PBC QASM text into a PBM QuantumCircuit and basic stats.
+
+    Rotations are grouped into layers (recovered from the emitted order) and
+    separated by barriers, matching the structure the Python PBC path emits.
 
     Returns:
         (pbc_qc, stats)
@@ -221,16 +283,6 @@ def pbc_qasm_to_pbm(qasm: str) -> Tuple[QuantumCircuit, Dict]:
         if not line or line.startswith("//"):
             continue
 
-        m = _T_RE.match(line)
-        if m:
-            idxs, active_pauli, sign = _active_qubits_and_pauli(m.group(1))
-            if active_pauli:
-                qargs = [qreg[i] for i in idxs]
-                angle = _angle_for("t", sign)
-                pbc_qc.append(PBM.generate_gate(active_pauli, angle), qargs)
-                rotations += 1
-            continue
-
         m = _S_RE.match(line)
         if m:
             raise RuntimeError(
@@ -243,17 +295,33 @@ def pbc_qasm_to_pbm(qasm: str) -> Tuple[QuantumCircuit, Dict]:
                 f"Encountered z_pauli in nwqec PBC output; unsupported for now: '{line}'"
             )
 
-        m = _M_RE.match(line)
-        if m:
-            idxs, active_pauli, sign = _active_qubits_and_pauli(m.group(1))
-            if active_pauli:
-                qargs = [qreg[i] for i in idxs]
-                # Preserve sign in measurement gate name: Meas+XYZ / Meas-XYZ
-                pbc_qc.append(PBM.generate_measure(sign + active_pauli), qargs)
-                measurements += 1
-            continue
+    t_paulis, m_paulis = _collect_pbc_paulis(qasm)
 
-        # Ignore other QASM lines (includes qreg declaration, creg, etc.)
+    # Emit rotations layer by layer, barrier-separated. Mirrors the Python path:
+    # no leading barrier, one barrier between consecutive layers.
+    for layer in commuting_layer_runs(t_paulis):
+        if pbc_qc.data:
+            pbc_qc.barrier(qreg)
+        for pauli_with_sign in layer:
+            idxs, active_pauli, sign = _active_qubits_and_pauli(pauli_with_sign)
+            if not active_pauli:
+                continue
+            qargs = [qreg[i] for i in idxs]
+            angle = _angle_for("t", sign)
+            pbc_qc.append(PBM.generate_gate(active_pauli, angle), qargs)
+            rotations += 1
+
+    if m_paulis:
+        if pbc_qc.data:
+            pbc_qc.barrier(qreg)
+        for pauli_with_sign in m_paulis:
+            idxs, active_pauli, sign = _active_qubits_and_pauli(pauli_with_sign)
+            if not active_pauli:
+                continue
+            qargs = [qreg[i] for i in idxs]
+            # Preserve sign in measurement gate name: Meas+XYZ / Meas-XYZ
+            pbc_qc.append(PBM.generate_measure(sign + active_pauli), qargs)
+            measurements += 1
 
     stats: Dict = {
         "pbc_t_operators": rotations,  # rotation count (t/s/z combined)
