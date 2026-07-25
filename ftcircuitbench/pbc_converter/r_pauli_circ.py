@@ -342,11 +342,11 @@ class RotationPauliCirc:
             _ = tqdm(total=maxiter, desc="PBC Optimization", leave=True)
         while iter < maxiter:
             if ifprint:
-                print(f"[PBC] optimize_t Iteration {iter+1}/{maxiter}: Layering...")
+                print(f"[PBC] optimize_t Iteration {iter + 1}/{maxiter}: Layering...")
             self.t_layers = []
             self.layering(method=layering_method, ifprint=ifprint)
             if ifprint:
-                print(f"[PBC] optimize_t Iteration {iter+1}/{maxiter}: Merging...")
+                print(f"[PBC] optimize_t Iteration {iter + 1}/{maxiter}: Merging...")
             self.t_merging()
             ct = 0
             for tab in self.t_layers:
@@ -355,18 +355,18 @@ class RotationPauliCirc:
             self.update_tableau()
             if ifprint:
                 print(
-                    f"[PBC] optimize_t Iteration {iter+1}/{maxiter}: Tableau updated. T-count: {ct}"
+                    f"[PBC] optimize_t Iteration {iter + 1}/{maxiter}: Tableau updated. T-count: {ct}"
                 )
             if improve_ct == 0:
                 if ifprint:
                     print(
-                        f"[PBC] No improvement, stopping optimize_t at iteration {iter+1}."
+                        f"[PBC] No improvement, stopping optimize_t at iteration {iter + 1}."
                     )
                 break
             if ct == 0:
                 if ifprint:
                     print(
-                        f"[PBC] No T-gates remaining, stopping optimize_t at iteration {iter+1}."
+                        f"[PBC] No T-gates remaining, stopping optimize_t at iteration {iter + 1}."
                     )
                 break
             gate_ct_tracker.append(ct)
@@ -377,7 +377,7 @@ class RotationPauliCirc:
 
             iter += 1
             if ifprint:
-                print(f"[PBC] optimize_t Iteration {iter+1}/{maxiter} complete.")
+                print(f"[PBC] optimize_t Iteration {iter + 1}/{maxiter} complete.")
         if ifprint:
             print("[PBC] optimize_t loop complete.")
         if stat_out:

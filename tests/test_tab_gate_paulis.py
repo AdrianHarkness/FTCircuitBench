@@ -103,9 +103,9 @@ def test_layer1_conjugation_table(gate: str, pauli: str) -> None:
     tab = _make_one_qubit_tab(PAULI_ROWS[pauli])
     tab.apply_gate(gate, [0])
     got = (bool(tab.tableau[0, 0]), bool(tab.tableau[0, 1]), bool(tab.tableau[0, 2]))
-    assert (
-        got == EXPECTED[gate][pauli]
-    ), f"{gate} on {pauli}: got {got}, expected {EXPECTED[gate][pauli]}"
+    assert got == EXPECTED[gate][pauli], (
+        f"{gate} on {pauli}: got {got}, expected {EXPECTED[gate][pauli]}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -208,9 +208,9 @@ def test_layer3_matches_explicit_conjugation(gate: str, pauli: str) -> None:
     tab = _make_one_qubit_tab(PAULI_ROWS[pauli])
     tab.apply_gate(gate, [0])
     got = _row_to_matrix(tab.tableau[0])
-    assert _matrices_equal(
-        got, expected
-    ), f"{gate} {pauli}: tableau row -> {got}, expected {expected}"
+    assert _matrices_equal(got, expected), (
+        f"{gate} {pauli}: tableau row -> {got}, expected {expected}"
+    )
 
 
 # ---------------------------------------------------------------------------

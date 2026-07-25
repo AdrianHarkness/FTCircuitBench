@@ -124,7 +124,7 @@ def transpile_to_pbc_cpp(
             pre_opt_stats[f"pre_opt_{k}"] = v
         for k, v in pre_analysis.items():
             if k.startswith("pbc_"):
-                pre_opt_stats[f"pre_opt_{k[len('pbc_') : ]}"] = v
+                pre_opt_stats[f"pre_opt_{k[len('pbc_') :]}"] = v
             else:
                 pre_opt_stats[f"pre_opt_{k}"] = v
         if t_opt and fuse_supported:

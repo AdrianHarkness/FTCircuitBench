@@ -19,9 +19,8 @@ from ..pbc_converter.nwqec_adapter import transpile_to_pbc_cpp
 
 # Import Python-based transpilers (fallback)
 from .gs_transpiler import transpile_to_gridsynth_clifford_t as _python_gs_transpiler
-from .nwqec_ct import is_nwqec_available
+from .nwqec_ct import is_nwqec_available, transpile_to_clifford_t_cpp
 from .nwqec_ct import is_nwqec_available as _is_nwqec_available
-from .nwqec_ct import transpile_to_clifford_t_cpp
 from .nwqec_ct import transpile_to_clifford_t_cpp as _nwqec_ct_transpiler
 from .sk_transpiler import (
     transpile_to_solovay_kitaev_clifford_t as _python_sk_transpiler,

@@ -1009,9 +1009,7 @@ def plot_pbc_pauli_weight_binned_bands(
         weights.append(len(instruction.qubits))
 
     if not weights:
-        print(
-            "⚠️  No PBC rotation or measurement operators found to plot weight bands."
-        )
+        print("⚠️  No PBC rotation or measurement operators found to plot weight bands.")
         return
 
     n = len(weights)

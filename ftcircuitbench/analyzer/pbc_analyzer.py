@@ -99,9 +99,7 @@ def analyze_pbc_circuit(
     stats["num_qubits"] = num_qubits_circuit
 
     rotation_pauli_weights = []  # Store weights of effective Paulis in rotation ops
-    measurement_pauli_weights = (
-        []
-    )  # Store weights of effective Paulis in measurement ops
+    measurement_pauli_weights = []  # Store weights of effective Paulis in measurement ops
 
     num_rotation_ops = 0
     num_measurement_ops = 0
@@ -167,14 +165,14 @@ def analyze_pbc_circuit(
             if num_op_qubits > 1 and weight > 0:  # Multi-qubit Pauli measurement
                 qubit_indices = sorted([pbc_circuit.find_bit(q).index for q in qargs])
                 for i in range(len(qubit_indices)):
-                    qubit_degree_pbc[
-                        qubit_indices[i]
-                    ] += 1  # Also count for measurement interactions
+                    qubit_degree_pbc[qubit_indices[i]] += (
+                        1  # Also count for measurement interactions
+                    )
                     for j in range(i + 1, len(qubit_indices)):
                         pair = (qubit_indices[i], qubit_indices[j])
-                        interaction_counts_pbc[
-                            pair
-                        ] += 1  # Measurement implies interaction
+                        interaction_counts_pbc[pair] += (
+                            1  # Measurement implies interaction
+                        )
 
         elif op_type == "utility":
             num_utility_ops += 1

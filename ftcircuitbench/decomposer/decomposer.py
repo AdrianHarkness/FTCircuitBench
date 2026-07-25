@@ -127,9 +127,9 @@ def decompose_rz_gates_gridsynth(
 
     ZERO_THRESHOLD = 10 ** (-precision)
     # Step 1: Collect all operations and RZ gate info
-    ops_info: List[Tuple[bool, Any, Any, Any, Any]] = (
-        []
-    )  # (is_rz, op, qargs, cargs, rz_info)
+    ops_info: List[
+        Tuple[bool, Any, Any, Any, Any]
+    ] = []  # (is_rz, op, qargs, cargs, rz_info)
     rz_jobs: List[Tuple[int, Any, str]] = []  # (index, qubit, theta_str)
     for idx, instr in enumerate(original_circuit.data):
         op, qargs, cargs = instr.operation, instr.qubits, instr.clbits

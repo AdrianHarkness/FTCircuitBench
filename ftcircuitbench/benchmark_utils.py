@@ -17,9 +17,9 @@ def format_time(seconds: float) -> str:
     if not isinstance(seconds, (int, float)):
         return "N/A"
     if seconds < 0.001 and seconds != 0:
-        return f"{seconds*1000:.3f}ms"
+        return f"{seconds * 1000:.3f}ms"
     if seconds < 0.01 and seconds != 0:
-        return f"{seconds*1000:.2f}ms"
+        return f"{seconds * 1000:.2f}ms"
     if seconds < 1:
         return f"{seconds:.3f}s"
     if seconds < 60:
@@ -103,12 +103,14 @@ def combine_pbc_files_same_dir(target_dir: str, run_prefix: str, stage: str):
     try:
         with open(combined_filepath, "w") as outfile:
             if has_tlayers:
-                outfile.write(f"--- T-Layers ({stage.replace('_',' ')}) ---\n")
+                outfile.write(f"--- T-Layers ({stage.replace('_', ' ')}) ---\n")
                 with open(tlayers_filepath, "r") as infile:
                     outfile.write(infile.read())
                 outfile.write("\n\n")
             if has_measure_basis:
-                outfile.write(f"--- Measurement Basis ({stage.replace('_',' ')}) ---\n")
+                outfile.write(
+                    f"--- Measurement Basis ({stage.replace('_', ' ')}) ---\n"
+                )
                 with open(measure_basis_filepath, "r") as infile:
                     outfile.write(infile.read())
         # Only delete after successful write
@@ -195,7 +197,7 @@ def print_circuit_stats(title: str, stats: Dict[str, Any], show_detailed: bool =
     """Prints a comprehensive, structured summary of all circuit statistics."""
     if "fidelity_method" not in stats and "method" in stats:
         stats["fidelity_method"] = stats["method"]
-    print(f"\n{'='*10} {title} {'='*10}")
+    print(f"\n{'=' * 10} {title} {'=' * 10}")
     if not stats:
         print("  (No statistics available)")
         return

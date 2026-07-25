@@ -82,9 +82,9 @@ def analyze_clifford_t_circuit(
         weight = data.get("weight", 0)
         interaction_counts[(u, v)] = weight
         total_interactions += weight
-        qubit_degree[
-            u
-        ] += weight  # Note: logic in original code added 1 for each interaction?
+        qubit_degree[u] += (
+            weight  # Note: logic in original code added 1 for each interaction?
+        )
         # In original code:
         # interaction_counts[pair] += 1
         # qubit_degree[q1] += 1
