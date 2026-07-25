@@ -15,7 +15,7 @@ uv sync --all-extras
 ```
 
 This creates `.venv/` and installs the package in editable mode along with all
-development dependencies (pytest, pytest-mock, ruff, black, isort) using the
+development dependencies (pytest, pytest-mock, ruff, mypy) using the
 pinned versions in `uv.lock`. Run any project command with `uv run`:
 
 ```bash
@@ -90,20 +90,20 @@ skips.
 
 ## Code style
 
-This project uses [ruff](https://docs.astral.sh/ruff/) for linting, [black](https://black.readthedocs.io/) for formatting, and [isort](https://pycqa.github.io/isort/) for import ordering. All three are configured in `pyproject.toml`.
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting, formatting,
+and import ordering, configured under `[tool.ruff]` in `pyproject.toml`.
 
 Check and auto-fix before committing:
 
 ```bash
 uv run ruff check --fix ftcircuitbench/ tests/
-uv run black ftcircuitbench/ tests/
-uv run isort ftcircuitbench/ tests/
+uv run ruff format ftcircuitbench/ tests/
 ```
 
 ## Pre-commit hooks
 
 This repository ships a [pre-commit](https://pre-commit.com/) configuration
-(`.pre-commit-config.yaml`) that runs ruff, black, isort, and a few standard
+(`.pre-commit-config.yaml`) that runs ruff (lint + format) and a few standard
 hygiene checks (trailing whitespace, end-of-file newline, YAML/TOML syntax,
 large-file guard) on every commit. Installing the hooks is optional but
 recommended:

@@ -43,7 +43,7 @@ jobs:
         run: uv run --no-sync pytest -v
 
   lint:
-    name: Lint (ruff/black/isort)
+    name: Lint (ruff)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -52,12 +52,10 @@ jobs:
           enable-cache: true
       - name: Sync deps
         run: uv sync --all-extras
-      - name: ruff
+      - name: ruff check
         run: uv run ruff check ftcircuitbench tests
-      - name: black
-        run: uv run black --check ftcircuitbench tests
-      - name: isort
-        run: uv run isort --check-only ftcircuitbench tests
+      - name: ruff format
+        run: uv run ruff format --check ftcircuitbench tests
 
   typecheck:
     name: mypy

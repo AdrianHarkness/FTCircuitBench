@@ -53,7 +53,7 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-Drop `[dev]` if you don't need pytest, ruff, black, or isort.
+Drop `[dev]` if you don't need pytest, ruff, or mypy.
 
 ## Quick checks
 
