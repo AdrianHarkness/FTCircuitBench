@@ -50,10 +50,30 @@ cd FTCircuitBench
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-pip install -e ".[dev]"
+pip install -e ".[dev,qre]"
 ```
 
-Drop `[dev]` if you don't need pytest, ruff, or mypy.
+Drop `[dev]` if you don't need pytest, ruff, or mypy, and `[qre]` if you don't
+need the Azure resource-estimation bridge (see below).
+
+## Optional: Azure Quantum Resource Estimator
+
+The `qre` extra installs [`qdk`](https://pypi.org/project/qdk/), which bundles
+the Azure Quantum Resource Estimator used by `estimate_resources.py` and
+`ftcircuitbench.resource_estimation`. The estimator runs locally — no Azure
+subscription, account, or network access is involved.
+
+```bash
+uv sync --extra qre         # or: pip install "ftcircuitbench[qre]"
+```
+
+`uv sync --all-extras` already includes it. Without the extra, everything else
+in the suite works normally; the estimation CLI exits with an install hint and
+the estimation tests that need it are skipped.
+
+Note that `qdk` supersedes the older `qsharp` package. The bridge imports
+`qdk.estimator` first and falls back to `qsharp.estimator`, so an environment
+that still has the old package keeps working.
 
 ## Quick checks
 

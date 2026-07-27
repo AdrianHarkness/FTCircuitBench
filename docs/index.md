@@ -9,8 +9,8 @@ Solovay-Kitaev (SK), and Pauli-Based Computation (PBC).
   with notes on the optional `gridsynth` Haskell binary.
 - [`api.md`](api.md) — reference for every symbol re-exported from
   `ftcircuitbench.__init__` and the entry points in `ftcircuitbench.api`.
-- [`examples.md`](examples.md) — three worked examples: single-circuit CLI,
-  batch CLI, and the Python API.
+- [`examples.md`](examples.md) — four worked examples: single-circuit CLI,
+  batch CLI, the Python API, and physical resource estimation.
 
 ## Other useful links
 
@@ -24,14 +24,17 @@ Solovay-Kitaev (SK), and Pauli-Based Computation (PBC).
 
 ## Quick orientation
 
-- Pipelines: GS or SK → Clifford+T → PBC conversion → optional fidelity + stats.
+- Pipelines: GS or SK → Clifford+T → PBC conversion → optional fidelity + stats,
+  then optionally down to physical costs via the Azure Resource Estimator.
 - Output directories: `clifford_t_output/` (Clifford+T QASM),
-  `pbc_output/` (PBC layers and measurement bases), and
-  `circuit_stats_output/` (JSON summaries).
+  `pbc_output/` (PBC layers and measurement bases),
+  `circuit_stats_output/` (JSON summaries), and `qre_output/` (physical
+  resource estimates).
 - Scripts: `analyze_circuit.py` for a single circuit, `generate_benchmarks.py`
-  for the full sweep.
+  for the full sweep, `estimate_resources.py` for physical resource estimates.
 - Library: import `PipelineConfig`, `run_pipeline`, or `run_analysis_for_file`
-  from `ftcircuitbench.api`.
+  from `ftcircuitbench.api`; `ftcircuitbench.resource_estimation` for the Azure
+  QRE bridge (optional `qre` extra).
 
 Start with [`installation.md`](installation.md), then try
 [`examples.md`](examples.md).

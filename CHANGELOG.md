@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Azure Quantum Resource Estimator bridge.** New
+  `ftcircuitbench.resource_estimation` subpackage carries FTCircuitBench's
+  logical counts (Clifford+T T-family counts, or post-optimization PBC
+  rotation/measurement operators) down to physical costs — physical qubits,
+  runtime, code distance, T-factory count — under six built-in hardware models
+  (superconducting, trapped-ion, and Majorana at two error rates each). Inputs
+  can come from the aggregated `circuit_benchmarks/ct_stats.csv` or from
+  per-circuit `*_stats.json` files written by `analyze_circuit.py`. The
+  estimator runs locally; no Azure subscription or network access is required.
+- `estimate_resources.py` CLI driving that bridge, with `--ct-stats` /
+  `--stats-json` input selection, `--counts {clifford_t,pbc}`, repeatable
+  `--model` and `--label` filters, `--error-budget`, and `--list-models`.
+  Results are written to `qre_output/qre_results.json`.
+- Optional `qre` dependency group in `pyproject.toml` (`qdk>=1.23.0`), covered
+  by `uv sync --all-extras`. The bridge falls back to the legacy
+  `qsharp.estimator` import for environments predating the `qdk` rename.
+- `tests/test_azure_qre.py`, covering label/CSV/stats parsing, hardware-model
+  rendering, and result mapping against a stubbed estimator, plus two
+  consistency checks against the real estimator that skip when `qdk` is absent.
 - Pre-commit configuration (`.pre-commit-config.yaml`) covering ruff (linting,
   formatting, and import sorting) and assorted hygiene hooks.
 - `mypy` configuration in `pyproject.toml` and a `[tool.coverage]` section for

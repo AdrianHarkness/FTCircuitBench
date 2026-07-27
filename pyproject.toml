@@ -55,6 +55,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Azure Quantum Resource Estimator bridge (ftcircuitbench.resource_estimation).
+# `qdk` ships the estimator as a local library, so no Azure subscription or
+# network access is needed. Kept optional because it pulls a native wheel
+# (pyqir) that the rest of the suite does not need. `qdk` supersedes the
+# `qsharp` package; the bridge still falls back to `qsharp.estimator` for
+# environments that predate the rename.
+qre = [
+    "qdk>=1.23.0",
+]
 dev = [
     "pytest>=8.4.0",
     "pytest-mock>=3.14.1",

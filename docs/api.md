@@ -269,6 +269,104 @@ analyzers and the visualization helpers.
 
 ---
 
+## Resource estimation (`ftcircuitbench.resource_estimation`)
+
+Not re-exported from the package root: this subpackage needs the optional `qre`
+extra (`uv sync --extra qre`), which installs the `qdk` package containing the
+Azure Quantum Resource Estimator. Import it directly:
+
+```python
+from ftcircuitbench.resource_estimation import (
+    HARDWARE_MODELS,
+    estimate_circuit,
+    estimate_circuits,
+    logical_counts_from_stats,
+    read_ct_stats_csv,
+    read_stats_json,
+    resolve_hardware_models,
+)
+```
+
+### `is_qre_available() -> bool`
+
+True when the optional Azure QRE dependency can be imported. `qdk` is preferred;
+the legacy `qsharp` package is accepted as a fallback.
+
+### `HardwareModel`
+
+```python
+@dataclass(frozen=True)
+class HardwareModel:
+    name: str
+    qubit_params: str
+    qec_scheme: Optional[str] = None
+    error_budget: float = 0.01
+```
+
+One Azure QRE hardware configuration. `job_params()` renders it as QRE job
+parameters; `with_error_budget(f)` returns a copy with a different budget.
+`HARDWARE_MODELS` maps names to the six built-in configurations
+(`superconducting 1e-3/1e-4`, `trapped-ion 1e-3/1e-4`, `majorana 1e-4/1e-6`);
+`DEFAULT_MODEL_NAMES` holds the two superconducting defaults.
+
+### `resolve_hardware_models(names=None, error_budget=None) -> list[HardwareModel]`
+
+Look models up by name (defaulting to `DEFAULT_MODEL_NAMES`), optionally
+overriding the error budget on all of them. Raises `KeyError` for unknown names.
+
+### `LogicalResourceCounts`
+
+```python
+@dataclass(frozen=True)
+class LogicalResourceCounts:
+    label: str
+    num_qubits: int
+    t_count: int
+    measurement_count: int
+    ccz_count: int = 0
+    counts_source: str = "clifford_t"
+```
+
+The logical-layer input to an estimate. `to_job_input()` renders it as QRE's
+`LogicalCounts` dictionary.
+
+### `read_ct_stats_csv(path="circuit_benchmarks/ct_stats.csv", labels=None, skip_zero_t=True) -> list[LogicalResourceCounts]`
+
+Read logical counts from the aggregated Clifford+T stats CSV written by
+`generate_benchmarks.py`. Circuit width comes from the `<N>q` token in each
+label; `measurement_count` is set to that width. Clifford-only rows are dropped
+unless `skip_zero_t=False`.
+
+### `logical_counts_from_stats(stats, label, counts_source="clifford_t") -> LogicalResourceCounts`
+
+Build counts from a per-circuit stats mapping (a `*_stats.json` payload, or a
+merged `clifford_stats` / `pbc_stats` pair). `counts_source="clifford_t"` uses
+`total_t_family_count`; `"pbc"` uses the post-optimization
+`pbc_rotation_operators` and `pbc_measurement_operators`.
+`read_stats_json(path, label=None, counts_source=...)` is the file-reading
+wrapper, defaulting the label to the filename minus its `_stats` suffix.
+
+### `estimate_circuit(counts, models=None) -> CircuitResourceEstimate`
+
+Estimate physical resources for one circuit under each hardware model. A model
+whose estimate fails is recorded in `.errors` instead of aborting the rest.
+Raises `ImportError` (carrying an install hint) when the `qre` extra is absent.
+`estimate_circuits(counts, models=None, progress=False)` is the batch form.
+
+### `CircuitResourceEstimate` / `PhysicalEstimate`
+
+`CircuitResourceEstimate` holds the input `counts`, an `estimates` dict keyed by
+model name, and an `errors` dict for models that failed; `to_dict()` renders the
+JSON shape written by `estimate_resources.py`. Each `PhysicalEstimate` carries
+`physical_qubits`, `runtime_seconds`, `code_distance`, `logical_depth`,
+`algorithmic_logical_qubits`, `num_t_states`, `num_t_factories`,
+`physical_qubits_for_algorithm`, and `physical_qubits_for_t_factories`.
+
+See [`examples.md`](examples.md#4-physical-resource-estimation-estimate_resourcespy)
+for worked usage.
+
+---
+
 ## Worked example
 
 ```python

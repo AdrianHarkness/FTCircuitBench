@@ -30,6 +30,8 @@ pip install -e ".[dev]"
 
 Requirements: Python 3.10+, [`nwqec`](https://github.com/pnnl/nwqec) (for fast Gridsynth/PBC via `fuse_t`). An optional `gridsynth` binary on your `PATH` enables the Python-fallback GS path.
 
+Optional extras: `qre` installs [`qdk`](https://pypi.org/project/qdk/) for the Azure Quantum Resource Estimator bridge (see [Physical resource estimation](#physical-resource-estimation-azure-qre)). `uv sync --all-extras` and `pip install -e ".[dev,qre]"` both include it.
+
 ## Quick start
 
 Analyze one circuit (Gridsynth pipeline, PBC on):
@@ -44,6 +46,12 @@ Run the full benchmark suite:
 
 ```bash
 uv run python generate_benchmarks.py
+```
+
+Estimate physical (post-error-correction) resources for the benchmark suite:
+
+```bash
+uv run python estimate_resources.py --label 'qft-29q-*'
 ```
 
 Open the walkthrough notebook:
@@ -119,6 +127,54 @@ print(result.pipelines["gs"].clifford_stats["total_t_family_count"])
 
 See [`docs/api.md`](docs/api.md) for the full API reference.
 
+## Physical resource estimation (Azure QRE)
+
+FTCircuitBench reports *logical* costs: Clifford+T gate counts and PBC
+rotation/measurement operators. `estimate_resources.py` carries those counts
+down to the *physical* layer — physical qubits, wall-clock runtime, surface-code
+distance, and T-factory count — via the [Azure Quantum Resource
+Estimator](https://learn.microsoft.com/azure/quantum/intro-to-resource-estimation)
+that ships inside the `qdk` package. The estimator runs locally; no Azure
+subscription or network access is needed.
+
+```bash
+uv sync --extra qre                                     # one-time install
+
+uv run python estimate_resources.py --list-models
+uv run python estimate_resources.py --label 'heisenberg-1d-100q-*'
+```
+
+By default this reads `circuit_benchmarks/ct_stats.csv` (written by
+`generate_benchmarks.py`) and estimates every circuit under the two
+superconducting models, writing `qre_output/qre_results.json`:
+
+```
+=== Physical Resources (superconducting 1e-3) ===
+Circuit                    T count  Physical qubits  Runtime  Code distance
+-----------------------  ---------  ---------------  -------  -------------
+heisenberg-1d-100q-gs-5    575,080          384,940    3.91s             17
+heisenberg-1d-100q-gs-8    966,360          400,060    7.35s             19
+heisenberg-1d-100q-sk-1    399,840          384,940    2.72s             17
+heisenberg-1d-100q-sk-2    528,160          384,940    3.59s             17
+```
+
+To estimate a single circuit straight from `analyze_circuit.py` output — and to
+price the PBC execution model rather than the Clifford+T one — point it at a
+stats JSON:
+
+```bash
+uv run python estimate_resources.py \
+  --stats-json circuit_stats_output/qft_4q_gs_prec5_stats.json \
+  --counts pbc \
+  --model 'majorana 1e-6'
+```
+
+Because FTCircuitBench has already synthesised every `rz` into Clifford+T, the
+counts handed to QRE carry a concrete T count and leave QRE's own rotation-cost
+model unused: the physical estimate reflects *your* choice of synthesis engine
+and precision. See [`docs/examples.md`](docs/examples.md#4-physical-resource-estimation-estimate_resourcespy)
+for the programmatic API.
+
 ## Repository structure
 
 ```
@@ -130,9 +186,11 @@ FTCircuitBench/
 │   ├── parser/                         # QASM parser
 │   ├── pbc_converter/                  # PBC circuit conversion and I/O
 │   ├── transpilers/                    # Gridsynth and Solovay-Kitaev transpilers
+│   ├── resource_estimation/            # Azure QRE bridge (optional `qre` extra)
 │   └── reports/                        # Markdown summary generation
 ├── analyze_circuit.py                  # CLI: analyze a single circuit
 ├── generate_benchmarks.py              # CLI: run the full benchmark suite
+├── estimate_resources.py               # CLI: physical resource estimates via Azure QRE
 ├── FTCircuitBench_Pipeline_Demo.ipynb  # Walkthrough notebook
 ├── qasm/                               # Input benchmark circuits (QASM 2.0)
 ├── circuit_outputs/                    # Archival Clifford+T QASM artifacts (legacy backend)

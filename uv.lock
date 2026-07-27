@@ -284,6 +284,9 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff" },
 ]
+qre = [
+    { name = "qsharp" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -298,13 +301,14 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.1" },
     { name = "qiskit", specifier = "==2.0.2" },
+    { name = "qsharp", marker = "extra == 'qre'", specifier = ">=1.10.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.8" },
     { name = "scikit-learn", specifier = ">=1.5.0" },
     { name = "scipy", specifier = ">=1.13.0" },
     { name = "sympy", specifier = ">=1.14.0" },
     { name = "tqdm", specifier = ">=4.67.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["qre", "dev"]
 
 [[package]]
 name = "identify"
@@ -803,6 +807,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pyqir"
+version = "0.12.5"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6e/10/3b041f225dac208451f568188fd06524360ffc66ff855a1a205af0a895a0/pyqir-0.12.5-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:9bc8232f028f40e026cb72c7f654cf63f4c464ff4695874b70a45e8c34969665", size = 2160708, upload-time = "2026-05-12T18:06:54.242Z" },
+    { url = "https://files.pythonhosted.org/packages/88/94/a120794a8048291203b28c96e1c212243c45d8d99e2dad9002d67c0559ce/pyqir-0.12.5-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:7f568054dbb42b7fd33e0d5b58e7ac60ad6af496e9e1376fcb4a45290e9f510d", size = 2102202, upload-time = "2026-05-12T18:06:56.336Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/b7/da263a4c694b062d94b899a7248dec2238f965dc4ee58c69c6ba1263297e/pyqir-0.12.5-cp39-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:4304984337a26cb01f8f0b0b0b436737e90379fbd0adfb48f142cfd942234384", size = 2640753, upload-time = "2026-05-12T18:06:57.988Z" },
+    { url = "https://files.pythonhosted.org/packages/31/9f/e78010a4158e65be86b0013bccd5b0709ae87d8af9da82685464fb8e784c/pyqir-0.12.5-cp39-abi3-manylinux_2_38_aarch64.whl", hash = "sha256:ced0baf85371393bae59c3c93a97d3de68217f43fde21b7be8c6ed31b1e00128", size = 2709456, upload-time = "2026-05-12T18:06:59.761Z" },
+    { url = "https://files.pythonhosted.org/packages/04/b2/970e1621e372dffbb540cbb06518d0af4a16e63c074db61d60fb3d464ae2/pyqir-0.12.5-cp39-abi3-win_amd64.whl", hash = "sha256:c70381e8e1e2db8e2a9d5aec484f51328b66f7ac9cc72989ba05a61d7689f950", size = 1967113, upload-time = "2026-05-12T18:07:01.197Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/6e/575bbfe2382e15c2c1e1a3062ba5f1f0b61d73da05b2ff1b130dbda1214b/pyqir-0.12.5-cp39-abi3-win_arm64.whl", hash = "sha256:1be238924839fa5edbae20fb5a039f0caabe349e96c20029e7decf180a7aa1ae", size = 1868996, upload-time = "2026-05-12T18:07:02.58Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -908,6 +925,23 @@ wheels = [
 ]
 
 [[package]]
+name = "qdk"
+version = "1.30.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyqir" },
+    { name = "qsharp" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/14/01994e0c52c94e9655206b082b90c1bce58680edbc2464a1728b2b2861b8/qdk-1.30.0-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:fc39a4d9ec178f637c3fdb832c1f69595e8e08ac3b3db2b8d2a2d3b21cdd0a56", size = 6264720, upload-time = "2026-07-09T21:59:53.094Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/d6/cf09d82b0cf36b6a21d869ba02dfb6ae54b3983be176d4e494e467a3f78e/qdk-1.30.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:7b87e944240912fcbf83681f5235f5f8658e73a8494c54bef3b3eb066cec9457", size = 5866389, upload-time = "2026-07-09T21:59:55.214Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/9d/c276db3e0cd14dbecaddda65c3dff6807f6c3a4d2ec568b9e262eace901e/qdk-1.30.0-cp310-abi3-manylinux_2_35_aarch64.whl", hash = "sha256:ab850dcaba67b1e493d03352f2924b55fdefb9444f90d9d5c5c670fab448c6eb", size = 6490600, upload-time = "2026-07-09T21:59:56.985Z" },
+    { url = "https://files.pythonhosted.org/packages/57/8d/a5970bbb77aa192d42b93a0523dac998dc5f3accf47bbc3fbcf5829af945/qdk-1.30.0-cp310-abi3-manylinux_2_35_x86_64.whl", hash = "sha256:652939129208e8862904bb4f70ceddd90a848d708c3419cd00ffc05e8a6da8c4", size = 7111248, upload-time = "2026-07-09T21:59:58.826Z" },
+    { url = "https://files.pythonhosted.org/packages/17/09/2b85744cc2b1ef3c67e1b9bf4f3e5f70c1e79ae351c58ca88e9b2e4d0c74/qdk-1.30.0-cp310-abi3-win_amd64.whl", hash = "sha256:1665b0ccdf54dbfb5233d66aa7d123275f0d1fde0695b970efbbe2f9041cced5", size = 7788568, upload-time = "2026-07-09T22:00:00.791Z" },
+    { url = "https://files.pythonhosted.org/packages/92/1e/4fb467d0bf08ef73cd1745c5577d90bcc8e6d43da9d307682c46c126e084/qdk-1.30.0-cp310-abi3-win_arm64.whl", hash = "sha256:668ce1147125067ed66c3fc1a6519b071f1313aeeb55ed84fc93212db5b742f4", size = 7266763, upload-time = "2026-07-09T22:00:03.157Z" },
+]
+
+[[package]]
 name = "qiskit"
 version = "2.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -933,6 +967,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/93/cb/80ee7d6d704f837b791fbbe952434d113739c000e3ec445e7055e3bd844c/qiskit-2.0.2-cp39-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:e2422c375cd1cbe2ff8f5b59361479a50c1df1b99ff6a29738bf744a41039dc1", size = 6493706, upload-time = "2025-05-27T22:14:39.562Z" },
     { url = "https://files.pythonhosted.org/packages/cb/7c/f04c4c6ab93b359fb6ddd9090b8ababa43caa4f4aba4e0a45bd9d85f0680/qiskit-2.0.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6e7a52120623788768234fdc47f9c48cb0523f0cb66bb5408c1bc39048007f15", size = 6505135, upload-time = "2025-05-27T20:41:21.782Z" },
     { url = "https://files.pythonhosted.org/packages/c5/6b/af910210ba1642281990d078f1281784173068c59a81e7fce9982cf98ddf/qiskit-2.0.2-cp39-abi3-win_amd64.whl", hash = "sha256:1764e40a4cf570ad30384c5c530a65c7765062c8e1ac50122b47d863ae8f5376", size = 6243174, upload-time = "2025-05-27T20:41:23.514Z" },
+]
+
+[[package]]
+name = "qsharp"
+version = "1.30.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "qdk" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/c8/33b553e518a8a14bf5e1d1eef327a1c4dfb8737c1555ef4de783422aec9f/qsharp-1.30.0-py3-none-any.whl", hash = "sha256:4b990365ddb05ea13487583f663341f536fb92a38a111760580b2c4aea1b05a2", size = 15915, upload-time = "2026-07-09T22:00:05.061Z" },
 ]
 
 [[package]]
