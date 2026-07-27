@@ -269,6 +269,80 @@ analyzers and the visualization helpers.
 
 ---
 
+## Frontends (`ftcircuitbench.frontends`)
+
+Not re-exported from the package root: this subpackage needs the optional `cirq`
+and `qualtran` extras (`uv sync --extra cirq --extra qualtran`).
+
+```python
+from ftcircuitbench.frontends import (
+    bloq_to_qiskit, cirq_to_qiskit, bloq_t_complexity, count_measurement_uncompute,
+)
+```
+
+### `is_cirq_available() -> bool` / `is_qualtran_available() -> bool`
+
+Whether the corresponding optional dependency can be imported.
+
+### `has_qasm_representation(op) -> bool`
+
+True when Cirq can render an operation as OpenQASM 2 directly. This is the
+stopping rule for decomposition — see `decompose_for_qasm`.
+
+### `decompose_for_qasm(circuit, intercepting_decomposer=None) -> cirq.Circuit`
+
+Decompose only as far as OpenQASM 2 requires. Unlike a bare `cirq.decompose`,
+which lowers to a hardware gateset and rewrites `H`/`CNOT` into rotations, this
+stops at the first QASM-expressible layer and preserves the generator's native
+Clifford+T structure. `intercepting_decomposer` is an optional per-operation
+rewrite applied before Cirq's own decomposition.
+
+### `cirq_to_qasm2(circuit, decompose=True, allow_non_unitary=False, intercepting_decomposer=None) -> str`
+### `cirq_to_qiskit(...) -> QuantumCircuit`
+
+Lower a Cirq circuit to OpenQASM 2, or to a Qiskit circuit ready for
+`run_pipeline`. Raises `NonUnitaryCircuitError` when mid-circuit measurement,
+reset, or classical control survives decomposition — FTCircuitBench's Clifford+T
+and PBC analysis models unitary circuits, and terminal measurements (which the
+pipeline strips anyway) are the only exception. Cirq is big-endian and Qiskit
+little-endian, so the converted circuit satisfies
+`cirq.unitary(c) == Operator(qc.reverse_bits())` up to global phase; gate-to-qubit
+assignment, and therefore every resource count, is preserved exactly.
+
+### `op_census(circuit) -> Dict[str, int]`
+
+Operation counts by gate type — a quick look at what a generator emitted.
+
+### `bloq_to_cirq(bloq, unitary_uncompute=False, decompose=True) -> cirq.Circuit`
+### `bloq_to_qasm2(...) -> str` / `bloq_to_qiskit(...) -> QuantumCircuit`
+
+Lower a Qualtran Bloq. `unitary_uncompute=True` substitutes the unitary adjoint
+of `And` for Qualtran's measurement-based one, which is what makes most
+arithmetic and data-loading Bloqs analysable; it adds exactly 4 T gates per
+substitution.
+
+### `unitary_uncompute_interceptor(op)`
+
+The substitution itself, usable as `decompose_for_qasm`'s
+`intercepting_decomposer`. Returns the `And` compute circuit reversed and
+inverted — exactly `And†` as a matrix — for a measurement-based `And` adjoint,
+and `NotImplemented` for anything else.
+
+### `bloq_t_complexity(bloq) -> Dict[str, Any]`
+### `count_measurement_uncompute(bloq_or_circuit) -> int`
+
+Qualtran's analytic cost model, and the number of measurement-based `And`
+adjoints a Bloq contains. Together they predict what FTCircuitBench will measure:
+
+```python
+measured_t == bloq_t_complexity(bloq)["t"] + 4 * count_measurement_uncompute(bloq)
+```
+
+See [`examples.md`](examples.md#5-importing-circuits-from-qualtran-and-pyliqtr)
+for worked usage and the pyLIQTR file-handoff workflow.
+
+---
+
 ## Resource estimation (`ftcircuitbench.resource_estimation`)
 
 Not re-exported from the package root: this subpackage needs the optional `qre`

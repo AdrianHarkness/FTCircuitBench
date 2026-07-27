@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Cirq and Qualtran frontends.** New `ftcircuitbench.frontends` subpackage
+  ingests circuits from Cirq-based logical-circuit generators, completing the
+  path from algorithm construction to physical resource estimate. Two design
+  points matter for the numbers that come out:
+  - Decomposition stops at the first OpenQASM 2-expressible layer rather than
+    running to a hardware gateset. A bare `cirq.decompose` rewrites `H`/`CNOT`
+    into rotation gates and inflates the circuit several-fold; stopping early
+    keeps the exported circuit compact and faithful to the generator's
+    Clifford+T structure. Compiled resource counts are identical either way —
+    the extra rotations carry Clifford+T angles that synthesis reproduces
+    exactly.
+  - Non-unitary circuits are refused rather than silently analysed. Qualtran's
+    `And` adjoint is measurement-based, so most arithmetic and data-loading
+    Bloqs decompose to something the Clifford+T/PBC pipeline cannot model.
+    `unitary_uncompute=True` substitutes the exact unitary `And†` (the compute
+    circuit reversed and inverted) at a cost that closes exactly:
+    `measured T == qualtran analytic T + 4 x substitutions`.
+- `import_circuit.py` CLI resolving a `module:attribute` target to a Bloq or
+  Cirq circuit, lowering it to OpenQASM 2, and optionally running the pipeline
+  on the result (`--analyze`).
+- `tools/export_cirq_qasm.py`, a standalone exporter that imports nothing from
+  `ftcircuitbench`. pyLIQTR pins `numpy<2` and `qualtran==0.4.0` and so cannot
+  share an environment with FTCircuitBench; this carries its circuits across as
+  QASM under the same decomposition and unitarity rules.
+- Optional `cirq` (`cirq-core>=1.4.0`) and `qualtran` (`qualtran>=0.5.0`)
+  dependency groups, both covered by `uv sync --all-extras`.
+- `Qualtran_to_QRE_Demo.ipynb`: an end-to-end demo taking a Qualtran QFT through
+  FTCircuitBench (Clifford+T synthesis, PBC conversion) to Azure QRE physical
+  estimates, with a scaling sweep over circuit width. Every figure is computed
+  at run time.
+- `tests/test_cirq_frontend.py` and `tests/test_qualtran_frontend.py`, including
+  a numerical check that the `And†` substitution equals the true adjoint and a
+  cross-check of the T-count identity above.
 - **Azure Quantum Resource Estimator bridge.** New
   `ftcircuitbench.resource_estimation` subpackage carries FTCircuitBench's
   logical counts (Clifford+T T-family counts, or post-optimization PBC

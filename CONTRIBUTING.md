@@ -9,7 +9,7 @@ committed `uv.lock` for reproducible installs. The pinned interpreter is read
 from `.python-version` (currently `3.11`).
 
 ```bash
-git clone https://github.com/AdrianHarkness/FTCircuitBench.git
+git clone https://github.com/pnnl/FTCircuitBench.git
 cd FTCircuitBench
 uv sync --all-extras
 ```
@@ -125,7 +125,7 @@ all hooks against the entire repository so you can verify a clean baseline.
 
 ## Reporting issues
 
-Please open a [GitHub issue](https://github.com/AdrianHarkness/FTCircuitBench/issues) and include:
+Please open a [GitHub issue](https://github.com/pnnl/FTCircuitBench/issues) and include:
 
 - A minimal reproducible example (QASM file and the command or code that triggers the issue).
 - The Python version, OS, and version of `nwqec` / `gridsynth` in use.

@@ -1,16 +1,26 @@
 # FTCircuitBench
 
-[![CI](https://github.com/AdrianHarkness/FTCircuitBench/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrianHarkness/FTCircuitBench/actions/workflows/ci.yml)
+[![CI](https://github.com/pnnl/FTCircuitBench/actions/workflows/ci.yml/badge.svg)](https://github.com/pnnl/FTCircuitBench/actions/workflows/ci.yml)
 [![arXiv](https://img.shields.io/badge/arXiv-2601.03185-b31b1b.svg)](https://arxiv.org/abs/2601.03185)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 A benchmark suite for fault-tolerant quantum circuit compilation and architecture, covering Clifford+T synthesis (Gridsynth and Solovay-Kitaev) and Pauli-Based Computation (PBC).
 
+FTCircuitBench sits between the tools that *construct* logical circuits and the tools that *price* physical ones:
+
+```
+Qualtran / pyLIQTR  ──▶  FTCircuitBench  ──▶  Azure QRE
+  (logical circuits)      Clifford+T, PBC,     (physical qubits,
+                          structure, stats      runtime, code distance)
+```
+
+See [`Qualtran_to_QRE_Demo.ipynb`](Qualtran_to_QRE_Demo.ipynb) for that path end to end on a Qualtran QFT.
+
 ## Install
 
 ```bash
-git clone https://github.com/AdrianHarkness/FTCircuitBench.git
+git clone https://github.com/pnnl/FTCircuitBench.git
 cd FTCircuitBench
 uv sync --all-extras       # creates .venv with all deps + dev tools
 uv run pytest              # verify install
@@ -30,7 +40,13 @@ pip install -e ".[dev]"
 
 Requirements: Python 3.10+, [`nwqec`](https://github.com/pnnl/nwqec) (for fast Gridsynth/PBC via `fuse_t`). An optional `gridsynth` binary on your `PATH` enables the Python-fallback GS path.
 
-Optional extras: `qre` installs [`qdk`](https://pypi.org/project/qdk/) for the Azure Quantum Resource Estimator bridge (see [Physical resource estimation](#physical-resource-estimation-azure-qre)). `uv sync --all-extras` and `pip install -e ".[dev,qre]"` both include it.
+Optional extras, all included by `uv sync --all-extras`:
+
+| Extra | Installs | Enables |
+|---|---|---|
+| `qre` | [`qdk`](https://pypi.org/project/qdk/) | [Physical resource estimation](#physical-resource-estimation-azure-qre) via the Azure Quantum Resource Estimator |
+| `cirq` | [`cirq-core`](https://quantumai.google/cirq) | [Ingesting circuits](#logical-circuit-frontends-qualtran-pyliqtr) from any Cirq-based generator |
+| `qualtran` | [`qualtran`](https://github.com/quantumlib/Qualtran) | Lowering Qualtran Bloqs straight into the pipeline |
 
 ## Quick start
 
@@ -54,10 +70,11 @@ Estimate physical (post-error-correction) resources for the benchmark suite:
 uv run python estimate_resources.py --label 'qft-29q-*'
 ```
 
-Open the walkthrough notebook:
+Open a notebook:
 
 ```bash
-jupyter notebook FTCircuitBench_Pipeline_Demo.ipynb
+jupyter notebook FTCircuitBench_Pipeline_Demo.ipynb   # pipeline walkthrough
+jupyter notebook Qualtran_to_QRE_Demo.ipynb           # Qualtran -> FTCB -> Azure QRE
 ```
 
 Select the project `.venv` kernel and run all cells.
@@ -127,6 +144,57 @@ print(result.pipelines["gs"].clifford_stats["total_t_family_count"])
 
 See [`docs/api.md`](docs/api.md) for the full API reference.
 
+## Logical-circuit frontends (Qualtran, pyLIQTR)
+
+Qualtran and pyLIQTR construct fault-tolerant algorithms and emit Cirq circuits.
+`ftcircuitbench.frontends` lowers those to OpenQASM 2 and into the pipeline, so a
+Bloq can be compiled, converted to PBC, and costed at the physical layer without
+leaving Python:
+
+```bash
+uv sync --extra qualtran            # pulls cirq-core too
+
+uv run python import_circuit.py qualtran.bloqs.qft:QFTTextBook --args 4 \
+  --unitary-uncompute --output qasm/imported/qft_4.qasm --analyze
+```
+
+```python
+from ftcircuitbench.api import PipelineConfig, run_pipeline
+from ftcircuitbench.frontends import bloq_to_qiskit
+from qualtran.bloqs.qft import QFTTextBook
+
+circuit = bloq_to_qiskit(QFTTextBook(4), unitary_uncompute=True)
+result = run_pipeline(circuit, PipelineConfig(pipeline="gs", gridsynth_precision=5))
+print(result.clifford_stats["total_t_family_count"])
+```
+
+Two things the frontend does deliberately:
+
+- **It stops decomposing as soon as OpenQASM 2 can express every operation.**
+  Running `cirq.decompose` to the bottom rewrites `H`/`CNOT` into rotation
+  gates and inflates the circuit several-fold. Stopping early keeps the
+  exported circuit compact and close to the Clifford+T structure the generator
+  emitted. (Compiled resource counts are the same either way — the extra
+  rotations carry Clifford+T angles that synthesis reproduces exactly.)
+- **It refuses non-unitary circuits by default.** Qualtran's `And` adjoint is
+  measurement-based, which is why it costs zero T gates and why the decomposed
+  circuit is not a unitary. `unitary_uncompute=True` substitutes the unitary
+  adjoint instead, at a price that closes exactly: 4 T gates per substitution
+  (Qualtran's `And` is Gidney's temporary AND with a |0⟩-initialised target,
+  which is what makes its unitary adjoint 4 T rather than a general Toffoli's
+  7), so `measured T == qualtran analytic T + 4 x substitutions`.
+
+**pyLIQTR** emits Cirq circuits too, but its releases pin `numpy<2` and
+`qualtran==0.4.0`, which cannot coexist with FTCircuitBench's dependency floor.
+Cross the boundary as a file instead — `tools/export_cirq_qasm.py` imports
+nothing from FTCircuitBench and applies the same rules:
+
+```bash
+python tools/export_cirq_qasm.py my_module:build_encoding \
+  --unitary-uncompute -o heisenberg_be.qasm        # pyLIQTR environment
+uv run python analyze_circuit.py heisenberg_be.qasm --pipeline gs   # here
+```
+
 ## Physical resource estimation (Azure QRE)
 
 FTCircuitBench reports *logical* costs: Clifford+T gate counts and PBC
@@ -187,11 +255,15 @@ FTCircuitBench/
 │   ├── pbc_converter/                  # PBC circuit conversion and I/O
 │   ├── transpilers/                    # Gridsynth and Solovay-Kitaev transpilers
 │   ├── resource_estimation/            # Azure QRE bridge (optional `qre` extra)
+│   ├── frontends/                      # Cirq / Qualtran ingest (optional extras)
 │   └── reports/                        # Markdown summary generation
 ├── analyze_circuit.py                  # CLI: analyze a single circuit
 ├── generate_benchmarks.py              # CLI: run the full benchmark suite
 ├── estimate_resources.py               # CLI: physical resource estimates via Azure QRE
+├── import_circuit.py                   # CLI: import a Cirq/Qualtran circuit as QASM
+├── tools/export_cirq_qasm.py           # Standalone Cirq->QASM exporter (pyLIQTR envs)
 ├── FTCircuitBench_Pipeline_Demo.ipynb  # Walkthrough notebook
+├── Qualtran_to_QRE_Demo.ipynb    # End-to-end demo: Qualtran -> FTCB -> Azure QRE
 ├── qasm/                               # Input benchmark circuits (QASM 2.0)
 ├── circuit_outputs/                    # Archival Clifford+T QASM artifacts (legacy backend)
 ├── circuit_stats_output/               # Sample output statistics (JSON)

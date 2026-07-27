@@ -28,8 +28,8 @@ authors:
     given-names: Ang
   - family-names: Stein
     given-names: Samuel
-url: "https://github.com/AdrianHarkness/FTCircuitBench"
-repository-code: "https://github.com/AdrianHarkness/FTCircuitBench"
+url: "https://github.com/pnnl/FTCircuitBench"
+repository-code: "https://github.com/pnnl/FTCircuitBench"
 license: MIT
 keywords:
   - quantum-computing

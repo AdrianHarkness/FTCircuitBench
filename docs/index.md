@@ -9,8 +9,9 @@ Solovay-Kitaev (SK), and Pauli-Based Computation (PBC).
   with notes on the optional `gridsynth` Haskell binary.
 - [`api.md`](api.md) — reference for every symbol re-exported from
   `ftcircuitbench.__init__` and the entry points in `ftcircuitbench.api`.
-- [`examples.md`](examples.md) — four worked examples: single-circuit CLI,
-  batch CLI, the Python API, and physical resource estimation.
+- [`examples.md`](examples.md) — five worked examples: single-circuit CLI,
+  batch CLI, the Python API, physical resource estimation, and importing
+  circuits from Qualtran and pyLIQTR.
 
 ## Other useful links
 
@@ -24,6 +25,10 @@ Solovay-Kitaev (SK), and Pauli-Based Computation (PBC).
 
 ## Quick orientation
 
+- FTCircuitBench is the middle layer: Qualtran / pyLIQTR construct logical
+  circuits, FTCircuitBench compiles and characterises them, Azure QRE prices the
+  physical machine. `Qualtran_to_QRE_Demo.ipynb` (repo root) walks that
+  path end to end.
 - Pipelines: GS or SK → Clifford+T → PBC conversion → optional fidelity + stats,
   then optionally down to physical costs via the Azure Resource Estimator.
 - Output directories: `clifford_t_output/` (Clifford+T QASM),
@@ -31,10 +36,12 @@ Solovay-Kitaev (SK), and Pauli-Based Computation (PBC).
   `circuit_stats_output/` (JSON summaries), and `qre_output/` (physical
   resource estimates).
 - Scripts: `analyze_circuit.py` for a single circuit, `generate_benchmarks.py`
-  for the full sweep, `estimate_resources.py` for physical resource estimates.
+  for the full sweep, `estimate_resources.py` for physical resource estimates,
+  `import_circuit.py` for Cirq/Qualtran ingest.
 - Library: import `PipelineConfig`, `run_pipeline`, or `run_analysis_for_file`
   from `ftcircuitbench.api`; `ftcircuitbench.resource_estimation` for the Azure
-  QRE bridge (optional `qre` extra).
+  QRE bridge (optional `qre` extra); `ftcircuitbench.frontends` for Cirq and
+  Qualtran ingest (optional `cirq` / `qualtran` extras).
 
 Start with [`installation.md`](installation.md), then try
 [`examples.md`](examples.md).

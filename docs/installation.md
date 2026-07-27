@@ -21,7 +21,7 @@ All runtime dependencies are declared in `pyproject.toml`; uv pins them in
 ## Recommended: uv
 
 ```bash
-git clone https://github.com/AdrianHarkness/FTCircuitBench.git
+git clone https://github.com/pnnl/FTCircuitBench.git
 cd FTCircuitBench
 
 uv sync --all-extras       # creates .venv with all deps + dev tools
@@ -44,7 +44,7 @@ If you'd rather activate the venv directly, `source .venv/bin/activate` works
 If you prefer pip and a manually managed virtual environment:
 
 ```bash
-git clone https://github.com/AdrianHarkness/FTCircuitBench.git
+git clone https://github.com/pnnl/FTCircuitBench.git
 cd FTCircuitBench
 
 python -m venv .venv
@@ -74,6 +74,30 @@ the estimation tests that need it are skipped.
 Note that `qdk` supersedes the older `qsharp` package. The bridge imports
 `qdk.estimator` first and falls back to `qsharp.estimator`, so an environment
 that still has the old package keeps working.
+
+## Optional: Cirq and Qualtran frontends
+
+The `cirq` extra installs `cirq-core`, which lets `ftcircuitbench.frontends`
+ingest circuits from any Cirq-based generator. The `qualtran` extra adds
+Qualtran itself (and pulls `cirq-core` transitively), which lets a Bloq go
+straight into the pipeline:
+
+```bash
+uv sync --extra qualtran        # or: pip install "ftcircuitbench[qualtran]"
+```
+
+`uv sync --all-extras` includes both. Qualtran pulls a sizeable dependency tree
+(including Jupyter components it uses for its own notebooks), so install just
+`--extra cirq` if all you need is to read Cirq circuits or QASM files.
+
+### pyLIQTR is a separate environment
+
+pyLIQTR releases pin `numpy<2` and `qualtran==0.4.0`, neither of which can
+coexist with FTCircuitBench's dependency floor (`numpy>=2.0.0`), so there is no
+extra for it. Export QASM from a pyLIQTR environment with
+`tools/export_cirq_qasm.py` — a standalone script that imports nothing from
+`ftcircuitbench` — and analyse the file here. See
+[`examples.md`](examples.md#pyliqtr).
 
 ## Quick checks
 

@@ -64,6 +64,16 @@ dependencies = [
 qre = [
     "qdk>=1.23.0",
 ]
+# Cirq frontend: ingest circuits from any Cirq-based logical-circuit generator
+# (Qualtran, pyLIQTR, hand-built Cirq) via OpenQASM 2.
+cirq = [
+    "cirq-core>=1.4.0",
+]
+# Qualtran frontend: convert Bloqs to Cirq and on into the FTCircuitBench
+# pipeline. Pulls cirq-core transitively.
+qualtran = [
+    "qualtran>=0.5.0",
+]
 dev = [
     "pytest>=8.4.0",
     "pytest-mock>=3.14.1",
@@ -74,10 +84,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/AdrianHarkness/FTCircuitBench"
-Repository = "https://github.com/AdrianHarkness/FTCircuitBench"
-Documentation = "https://github.com/AdrianHarkness/FTCircuitBench/tree/main/docs"
-Issues = "https://github.com/AdrianHarkness/FTCircuitBench/issues"
+Homepage = "https://github.com/pnnl/FTCircuitBench"
+Repository = "https://github.com/pnnl/FTCircuitBench"
+Documentation = "https://github.com/pnnl/FTCircuitBench/tree/main/docs"
+Issues = "https://github.com/pnnl/FTCircuitBench/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
