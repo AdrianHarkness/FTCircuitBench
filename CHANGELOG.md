@@ -35,10 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   QASM under the same decomposition and unitarity rules.
 - Optional `cirq` (`cirq-core>=1.4.0`) and `qualtran` (`qualtran>=0.5.0`)
   dependency groups, both covered by `uv sync --all-extras`.
-- `Qualtran_to_QRE_Demo.ipynb`: an end-to-end demo taking a Qualtran QFT through
-  FTCircuitBench (Clifford+T synthesis, PBC conversion) to Azure QRE physical
-  estimates, with a scaling sweep over circuit width. Every figure is computed
-  at run time.
+- `demos/` folder collecting the executable notebooks, each committed with its
+  outputs: `demos/Qualtran_to_QRE_Demo.ipynb`, an end-to-end demo taking a
+  Qualtran QFT through FTCircuitBench (Clifford+T synthesis, PBC conversion) to
+  Azure QRE physical estimates with a scaling sweep over circuit width, and
+  `demos/FTCircuitBench_Pipeline_Demo.ipynb` (moved from the repository root
+  and annotated with markdown narration), the compilation pipeline in depth on
+  a 100-qubit Heisenberg circuit.
+- `CITATION.cff` gained `version` and `date-released` fields.
 - `tests/test_cirq_frontend.py` and `tests/test_qualtran_frontend.py`, including
   a numerical check that the `And†` substitution equals the true adjoint and a
   cross-check of the T-count identity above.

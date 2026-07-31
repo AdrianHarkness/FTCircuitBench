@@ -456,4 +456,4 @@ print(analysis.to_dict(include_artifacts=True))
 ```
 
 For a longer end-to-end walkthrough see [`examples.md`](examples.md) and the
-notebook `FTCircuitBench_Pipeline_Demo.ipynb` in the repository root.
+notebook `demos/FTCircuitBench_Pipeline_Demo.ipynb`.

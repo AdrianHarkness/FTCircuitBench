@@ -15,7 +15,7 @@ Qualtran / pyLIQTR  ──▶  FTCircuitBench  ──▶  Azure QRE
                           structure, stats      runtime, code distance)
 ```
 
-See [`Qualtran_to_QRE_Demo.ipynb`](Qualtran_to_QRE_Demo.ipynb) for that path end to end on a Qualtran QFT.
+See [`demos/Qualtran_to_QRE_Demo.ipynb`](demos/Qualtran_to_QRE_Demo.ipynb) for that path end to end on a Qualtran QFT.
 
 ## Install
 
@@ -73,8 +73,8 @@ uv run python estimate_resources.py --label 'qft-29q-*'
 Open a notebook:
 
 ```bash
-jupyter notebook FTCircuitBench_Pipeline_Demo.ipynb   # pipeline walkthrough
-jupyter notebook Qualtran_to_QRE_Demo.ipynb           # Qualtran -> FTCB -> Azure QRE
+jupyter notebook demos/FTCircuitBench_Pipeline_Demo.ipynb   # pipeline walkthrough
+jupyter notebook demos/Qualtran_to_QRE_Demo.ipynb           # Qualtran -> FTCB -> Azure QRE
 ```
 
 Select the project `.venv` kernel and run all cells.
@@ -114,8 +114,6 @@ A successful run takes a few seconds on a recent laptop and the JSON should begi
   ...
 }
 ```
-
-The values above are the canonical reference for this smoke test on the current `nwqec` C++ backend. If your numbers match (or are within rounding for `_count` totals), your install is reproducing the pipeline correctly. The legacy QASM artifacts under `circuit_outputs/` were produced by an older Python-Gridsynth path and predate the C++ backend; they are kept for archival reference but should not be used as a head-to-head comparison.
 
 ### Full benchmark reproduction
 
@@ -262,8 +260,9 @@ FTCircuitBench/
 ├── estimate_resources.py               # CLI: physical resource estimates via Azure QRE
 ├── import_circuit.py                   # CLI: import a Cirq/Qualtran circuit as QASM
 ├── tools/export_cirq_qasm.py           # Standalone Cirq->QASM exporter (pyLIQTR envs)
-├── FTCircuitBench_Pipeline_Demo.ipynb  # Walkthrough notebook
-├── Qualtran_to_QRE_Demo.ipynb    # End-to-end demo: Qualtran -> FTCB -> Azure QRE
+├── demos/                              # Executable demo notebooks (committed with outputs)
+│   ├── Qualtran_to_QRE_Demo.ipynb      # Qualtran -> FTCB -> Azure QRE in four steps
+│   └── FTCircuitBench_Pipeline_Demo.ipynb  # The compilation pipeline in depth
 ├── qasm/                               # Input benchmark circuits (QASM 2.0)
 ├── circuit_outputs/                    # Archival Clifford+T QASM artifacts (legacy backend)
 ├── circuit_stats_output/               # Sample output statistics (JSON)

@@ -20,14 +20,14 @@ Solovay-Kitaev (SK), and Pauli-Based Computation (PBC).
   — smoke-test and full benchmark reproduction commands.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — development setup, tests, and
   contribution guidelines.
-- `FTCircuitBench_Pipeline_Demo.ipynb` (repo root) — annotated notebook
+- `demos/FTCircuitBench_Pipeline_Demo.ipynb` — annotated notebook
   walkthrough of the pipeline.
 
 ## Quick orientation
 
 - FTCircuitBench is the middle layer: Qualtran / pyLIQTR construct logical
   circuits, FTCircuitBench compiles and characterises them, Azure QRE prices the
-  physical machine. `Qualtran_to_QRE_Demo.ipynb` (repo root) walks that
+  physical machine. `demos/Qualtran_to_QRE_Demo.ipynb` walks that
   path end to end.
 - Pipelines: GS or SK → Clifford+T → PBC conversion → optional fidelity + stats,
   then optionally down to physical costs via the Azure Resource Estimator.

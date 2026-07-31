@@ -51,13 +51,18 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-# Generated outputs
+# Generated outputs.
+# Note: circuit_benchmarks/ appears here even though a curated reference set is
+# tracked (git ls-files circuit_benchmarks). gitignore only affects untracked
+# files, so the committed reference outputs stay under version control while
+# fresh generate_benchmarks.py runs don't clutter `git status`.
 circuit_benchmarks/
 /clifford_t_output/
 /pbc_output/
 /qre_output/
-# nwqec's fuse_t writes this to cwd as a side-effect when --optimize-pbc is used
-/optimized_circuit.qasm
+# nwqec's fuse_t writes this to cwd as a side-effect when PBC optimization is
+# on (unanchored: notebooks under demos/ produce it there too)
+optimized_circuit.qasm
 
 # Personal/auxiliary scripts not part of the public package
 misc/

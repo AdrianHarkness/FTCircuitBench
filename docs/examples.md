@@ -365,6 +365,6 @@ to its qubits.
 ---
 
 For an annotated, cell-by-cell walkthrough see
-`FTCircuitBench_Pipeline_Demo.ipynb` in the repository root, and
-`Qualtran_to_QRE_Demo.ipynb` for the full Qualtran → FTCircuitBench →
+`demos/FTCircuitBench_Pipeline_Demo.ipynb`, and
+`demos/Qualtran_to_QRE_Demo.ipynb` for the full Qualtran → FTCircuitBench →
 Azure QRE path on a Qualtran QFT.
