@@ -159,25 +159,8 @@ wheels = [
 
 [[package]]
 name = "autoray"
-version = "0.7.2"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/24/d7/133dd5a2837e0416375b7f059f0cf3b26d22a330405ca0bd8bda43c00278/autoray-0.7.2.tar.gz", hash = "sha256:7f8f375af12deea65736b65305b86eff2e11ebaf8c58d3e599752681772ff0d7", size = 1210729, upload-time = "2025-07-09T00:26:37.235Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/ca/00c61fcd5bb7ce1dfe3e9313febf2ba11fa17cf619676960f548a7c32586/autoray-0.7.2-py3-none-any.whl", hash = "sha256:f692f0f21a6f187ce877f3cc810f035d601ccd713beac02974811650bb60f580", size = 930824, upload-time = "2025-07-09T00:26:35.182Z" },
-]
-
-[[package]]
-name = "autoray"
 version = "0.8.4"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.11' and sys_platform == 'win32'",
-    "python_full_version >= '3.11' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.11' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-]
 sdist = { url = "https://files.pythonhosted.org/packages/30/8f/c951dc8acf51db7554b075f184488400401472ad9aa25edffa9ed9982621/autoray-0.8.4.tar.gz", hash = "sha256:b4ce7066334279b216431a260bb5b5b84d87815e3295020a76d8701e43dc3432", size = 1321434, upload-time = "2025-12-05T01:42:25.539Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/49/bc1c2e3ca121f6468e0cd8d78a96ab2dcb65d0f003917f5d4edcaea103a2/autoray-0.8.4-py3-none-any.whl", hash = "sha256:287c366f2ba9d9c045ffa2b2421deea07439ed5a7f18b5d25b3a406d53b5c63c", size = 937489, upload-time = "2025-12-05T01:42:23.658Z" },
@@ -544,8 +527,7 @@ name = "cotengra"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "autoray", version = "0.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "autoray", version = "0.8.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "autoray" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/61/55/867bfde1fd7d91b79fd1ee23468f034fc5afb6da620124e43a1a004d3a05/cotengra-0.8.2.tar.gz", hash = "sha256:3040ec6cbcc5b3c5d0388444a97cef02dc5963c6a222106e669db0e586369da9", size = 2502794, upload-time = "2026-06-22T19:49:42.698Z" }
 wheels = [
@@ -933,11 +915,13 @@ qre = [
     { name = "qdk" },
 ]
 qualtran = [
+    { name = "autoray" },
     { name = "qualtran" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "autoray", marker = "extra == 'qualtran'", specifier = ">=0.8" },
     { name = "cirq-core", marker = "extra == 'cirq'", specifier = ">=1.4.0" },
     { name = "matplotlib", specifier = ">=3.9.4" },
     { name = "mpmath", specifier = ">=1.3.0" },
@@ -2196,7 +2180,7 @@ wheels = [
 
 [[package]]
 name = "pennylane"
-version = "0.42.3"
+version = "0.42.2"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -2204,7 +2188,7 @@ resolution-markers = [
 dependencies = [
     { name = "appdirs" },
     { name = "autograd" },
-    { name = "autoray", version = "0.7.2", source = { registry = "https://pypi.org/simple" } },
+    { name = "autoray" },
     { name = "cachetools" },
     { name = "diastatic-malt" },
     { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" } },
@@ -2218,7 +2202,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5e/27/f2e6f7bf64e588afbe5d552e4f68e4c817c87c4f5037fd5fc7d48a636a41/pennylane-0.42.3-py3-none-any.whl", hash = "sha256:184da954c4a187243d83472c4685420cc61cec080cef60ace9811d7744846bb4", size = 4824484, upload-time = "2025-08-20T21:15:56.789Z" },
+    { url = "https://files.pythonhosted.org/packages/af/45/56bf8b041d385fd3c2090d0607482aaa114764350b1a46613d872b4d4ad3/pennylane-0.42.2-py3-none-any.whl", hash = "sha256:dccd8dcfbb2ffca5f85d236ed5ebd2b93949328aff59263276181a686495720d", size = 4824475, upload-time = "2025-08-12T00:41:10.647Z" },
 ]
 
 [[package]]
@@ -2233,7 +2217,7 @@ resolution-markers = [
 dependencies = [
     { name = "appdirs" },
     { name = "autograd" },
-    { name = "autoray", version = "0.8.4", source = { registry = "https://pypi.org/simple" } },
+    { name = "autoray" },
     { name = "cachetools" },
     { name = "diastatic-malt" },
     { name = "gast" },
@@ -2259,7 +2243,7 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "pennylane", version = "0.42.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "pennylane", version = "0.42.2", source = { registry = "https://pypi.org/simple" } },
     { name = "scipy-openblas32" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a7/08/2600aebaa79625bb298ee4fde4df63f21ab6dcdaae182591a532eb985523/pennylane_lightning-0.42.0.tar.gz", hash = "sha256:37b877285e76c0b524df88c62679f4c182454d32a3dc1fac2fea7244ae21bb62", size = 774266, upload-time = "2025-07-15T14:48:14.529Z" }
@@ -2967,7 +2951,7 @@ dependencies = [
     { name = "notebook" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pennylane", version = "0.42.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pennylane", version = "0.42.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pennylane", version = "0.45.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "plotly" },
     { name = "protobuf" },
@@ -2994,7 +2978,7 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "autoray", version = "0.7.2", source = { registry = "https://pypi.org/simple" } },
+    { name = "autoray" },
     { name = "cotengra" },
     { name = "cytoolz" },
     { name = "numba" },
@@ -3018,7 +3002,7 @@ resolution-markers = [
     "python_full_version >= '3.11' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "autoray", version = "0.8.4", source = { registry = "https://pypi.org/simple" } },
+    { name = "autoray" },
     { name = "cotengra" },
     { name = "cytoolz" },
     { name = "numba" },

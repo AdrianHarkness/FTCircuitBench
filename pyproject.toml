@@ -71,8 +71,14 @@ cirq = [
 ]
 # Qualtran frontend: convert Bloqs to Cirq and on into the FTCircuitBench
 # pipeline. Pulls cirq-core transitively.
+#
+# autoray floor: cotengra (via qualtran -> quimb) calls autoray.get_namespace,
+# added in autoray 0.8, but declares no version floor. On Python 3.10 the
+# resolver otherwise pairs a current cotengra with autoray 0.7.x, which breaks
+# `import cotengra` (and with it these frontends) at runtime.
 qualtran = [
     "qualtran>=0.5.0",
+    "autoray>=0.8",
 ]
 dev = [
     "pytest>=8.4.0",
