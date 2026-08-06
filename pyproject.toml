@@ -8,7 +8,6 @@ version = "0.1.0"
 description = "A benchmark suite for fault-tolerant quantum circuit compilation and analysis"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
-license = { text = "MIT" }
 
 authors = [
     { name = "Adrian Harkness" },
@@ -28,7 +27,6 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",

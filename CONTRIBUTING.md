@@ -1,5 +1,10 @@
 # Contributing to FTCircuitBench
 
+> [!NOTE]
+> Outside contributions are not being accepted until the official open-source
+> release at [pnnl/FTCircuitBench](https://github.com/pnnl/FTCircuitBench).
+> This working mirror is public for visibility only; see the README for details.
+
 Thank you for your interest in contributing! This document covers how to set up a development environment, run tests, and submit changes.
 
 ## Development setup

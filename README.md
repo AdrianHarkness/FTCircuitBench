@@ -2,8 +2,12 @@
 
 [![CI](https://github.com/pnnl/FTCircuitBench/actions/workflows/ci.yml/badge.svg)](https://github.com/pnnl/FTCircuitBench/actions/workflows/ci.yml)
 [![arXiv](https://img.shields.io/badge/arXiv-2601.03185-b31b1b.svg)](https://arxiv.org/abs/2601.03185)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+
+> [!NOTE]
+> This is a working development mirror of FTCircuitBench, made public ahead of the
+> official open-source release at [pnnl/FTCircuitBench](https://github.com/pnnl/FTCircuitBench).
+> No license is granted for use or redistribution until that release; all rights reserved.
 
 A benchmark suite for fault-tolerant quantum circuit compilation and architecture, covering Clifford+T synthesis (Gridsynth and Solovay-Kitaev) and Pauli-Based Computation (PBC).
 

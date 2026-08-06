@@ -32,7 +32,6 @@ url: "https://github.com/pnnl/FTCircuitBench"
 repository-code: "https://github.com/pnnl/FTCircuitBench"
 version: "0.1.0"
 date-released: "2026-04-05"
-license: MIT
 keywords:
   - quantum-computing
   - quantum-circuit
